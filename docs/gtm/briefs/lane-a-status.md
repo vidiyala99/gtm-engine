@@ -17,13 +17,20 @@
 - leads: `{"stage": Stage, "person_id"?: str}`; creates the lead if missing.
 - Every route returns the updated run.
 
-## Run results (run id `promptql`, intake `gtm/pipeline/intake_promptql.json`)
-- ICP: 4 industries, 2 headcount bands, 4 personas, 5 triggers, each with confidence + why. 3 expansions with 8 G2 review citations (176 reviews from 4 products, $0.0094).
-- Discovery: 16 companies, all cited (14 homepage, 2 Prospeo profile). 3 rejected (1 layoffs news article, 2 HQ outside NA/EU). Tiers of the rest: A 6, B 7. Signals: 14 job_post, 11 funding, 2 exec_hire, 4 tech news. Data spend $0.16.
-- Model replies for this run's ICP were written by the lane-A session into the reply cache, because the lane CLI can't log in (see Blocks). They're marked `author` in `data/gtm/cache/llm/*.json`; delete those files once the token works and re-run to get Brain replies.
+- Step 5 enrichment (`enrich.py`): Sellbird people finder on team/about pages + Hunter domain search, ranked against ICP personas (whole-word title match; security/finance/legal etc. excluded); Hunter verifier sets email status + MX (never upgraded); each person cited; a Lead per live company.
+- Step 6 drafts (`draft.py`): per contact email 1A/1B/2/3 + LinkedIn via Brain under Sellbird's `email_style` rules; scraped text fenced (`sellbird.untrusted`); a draft citing no real positive signal is dropped; rule breaks go to `review_notes`; all `pending`.
+
+## Run results (run id `promptql`, intake `gtm/pipeline/intake_promptql.json`), all steps real (Brain + Glasser), 2026-11-24 ~22:45
+- ICP: 4 industries, 2 headcount bands, 4 personas, 5 triggers, confidence + why each. 3 expansions with 7 verbatim G2 review citations.
+- Competitors: 6 (3 direct, 2 indirect, 1 alternative), all cited.
+- Discovery: 16 companies, all cited. 2 rejected (HQ outside NA/EU). Live tiers: A 4, B 10. Signals: 12 job_post, 11 funding, 5 tech news, 1 exec_hire. (An earlier run also had 1 layoffs rejection; negative signals vary with the ICP the model writes.)
+- Enrichment: 9 contacts at the top companies: 4 verified, 3 catch-all, 1 unknown, 1 guess (no address found). Buyer titles only (CIO/CTO/VP or Head of Engineering/Data).
+- Drafts: 45 pending (9 contacts × 1A, 1B, 2, 3, LinkedIn), each citing ≥1 signal; 0 sendable until a rep approves.
+- Cost: data $0.58 this run (about $1.10 Glasser total today incl. exploration); model 66,547 tokens on the Claude plan.
+- Commands: `.venv/bin/python -m pytest -q gtm/tests` (38 pass). Through the API: `POST /api/gtm/runs` with the intake JSON runs all steps in the background.
 
 ## Next
-- Competitors, then enrichment (5 contacts), then drafts.
+- Owner/lane B/C: wire the UI to `GET /api/gtm/runs/promptql` (or a fresh POST). Possible lane-A follow-ups: graph export helper for lane B, a re-run/refresh route.
 
 ## Blocks
-- **Model calls from the lane session:** your smoke test at 22:09 worked (1,944 tokens), so your shell has a credential. My session (Claude Code child) still gets "Not logged in". Please put `CLAUDE_CODE_OAUTH_TOKEN=...` in `/home/node/gtm-engine/.env` (gitignored); `gtm/pipeline/llm.py` loads it. Until then a model miss writes `data/gtm/cache/llm/<agent>-<task>-<hash>.pending.json` and the step stops; the reply can be filled in and the step re-run for free (Glasser calls are cached).
+- none. (Model login was missing earlier in the session; it works now. A model miss still leaves `data/gtm/cache/llm/*.pending.json` and stops the step.)
