@@ -115,6 +115,20 @@ def _view(page, name):
     page.wait_for_selector(f"#gtm-view-{name}")
 
 
+NO_HSCROLL_JS = """() => [...document.querySelectorAll('#gtm .table-card, #gtm .gtm-main, #gtm')]
+  .filter(el => el.scrollWidth > el.clientWidth + 1)
+  .map(el => (el.id || el.className) + ' ' + el.scrollWidth + '>' + el.clientWidth)
+  .concat(document.documentElement.scrollWidth > innerWidth
+    ? ['page: ' + [...document.querySelectorAll('#gtm *, body > *')].filter(el => el.getBoundingClientRect().right > innerWidth + 1)
+        .slice(0, 3).map(el => el.tagName + '.' + el.className).join(', ')] : [])"""
+
+
+def _assert_no_hscroll(page, where):
+    """No table or view scrolls sideways: every column, including the last, is on screen."""
+    over = page.evaluate(NO_HSCROLL_JS)
+    assert not over, f"{where}: clipped sideways: {over}"
+
+
 def _shot(page, name):
     if os.environ.get("GTM_SHOTS", "1") != "0":  # data/ is gitignored
         SHOTS.mkdir(parents=True, exist_ok=True)
@@ -147,6 +161,8 @@ def test_fixture_views(server, width, height):
         page.click("#gtm button[data-act='lead-filter'][data-v='A']")
         assert "Acme Freight" in page.locator("#gtm .gtm-sheet").first.inner_text()
         page.click("#gtm button[data-act='lead-filter'][data-v='all']")
+        _assert_no_hscroll(page, f"leads {tag}")  # contacts sheet included: LinkedIn and source stay visible
+        assert page.locator("#gtm .gtm-sheet").nth(1).locator("a:has-text('LinkedIn')").first.is_visible()
 
         # ICP: confidence badges, evidence links, accept / adjust / dismiss.
         _view(page, "icp")
@@ -207,6 +223,9 @@ def test_fixture_views(server, width, height):
         assert "Waiting" in page.locator("#gtm #draft-d_1").inner_text()
         _shot(page, f"drafts-{tag}")
         page.click("#gtm #draft-d_1 button[data-act='approve']")
+        # Two actions in a row ("Edit saved", then "Approved"): one toast shows, never two stacked.
+        assert page.locator("body > .toast").count() == 1
+        assert "Approved" in page.locator("body > .toast").inner_text()
         page.click("#gtm button[data-act='draft-filter'][data-v='rejected']")
         rej = page.locator("#gtm #draft-d_3")
         assert "unsupported claim" in rej.inner_text()
@@ -227,13 +246,22 @@ def test_fixture_views(server, width, height):
         page.click("#gtm button[data-act='audit-actor'][data-v='all']")
         _shot(page, f"pipeline-{tag}")
 
-        # Agent thinking: collapsible, with tokens and cumulative cost.
+        # Agent thinking: collapsible; the header has the running total, each row its own cost.
         thinking = page.locator("#gtm details.gtm-thinking")
         assert "tok" in thinking.locator("summary").inner_text()
+        assert "$0.060" in thinking.locator("summary").inner_text()  # 0.05 discovery + 0.01 enrich
+        costs = thinking.locator(".gtm-feed-cost").all_inner_texts()
+        assert "$0.050" in costs and "$0.010" in costs
+        assert not any("$0.060" in c for c in costs)  # no row shows the cumulative as its cost
+        assert sum("$" not in c for c in costs) >= 3  # free events show no cost at all
         thinking.locator("summary").click()
         assert thinking.get_attribute("open") is None
         thinking.locator("summary").click()
         assert thinking.get_attribute("open") is not None
+
+        for v in VIEWS:
+            _view(page, v)
+            _assert_no_hscroll(page, f"{v} {tag}")
 
         # Run picker and reload stay on the fixture without errors.
         page.click("#gtm button[data-act='refresh']")

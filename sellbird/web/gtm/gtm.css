@@ -84,6 +84,11 @@
 #gtm td.gtm-co .cell-main, #gtm td.gtm-co .cell-sub { overflow-wrap: normal; white-space: nowrap; }
 #gtm td.gtm-co .gtm-cites { margin-top: 4px; }
 #gtm .gtm-sheet td.mono, #gtm .gtm-sheet td .badge, #gtm .gtm-sheet td .mini { white-space: nowrap; }
+#gtm .gtm-stack { display: flex; flex-direction: column; align-items: flex-start; gap: 4px; }
+#gtm .gtm-profile { display: inline-block; margin-top: 3px; font-size: var(--fs-caption); color: var(--accent); }
+/* Long source URLs truncate inside their cell instead of widening the sheet. */
+#gtm td.gtm-src { max-width: 220px; }
+#gtm .gtm-leads td.gtm-wrap { min-width: 200px; }
 #gtm .gtm-sigs, #gtm .gtm-ppl { list-style: none; display: flex; flex-direction: column; gap: 3px; margin-top: 2px; }
 #gtm .gtm-sigs li { line-height: 1.4; }
 #gtm .gtm-sigs li.neg { color: var(--bad); }
@@ -192,7 +197,8 @@
 
 /* ── Pipeline ── */
 
-#gtm .gtm-kanban { display: grid; grid-template-columns: repeat(5, minmax(150px, 1fr)); gap: var(--sp-2); overflow-x: auto; padding-bottom: 4px; }
+/* position: relative keeps the cards' absolutely placed sr-only labels inside the scroller (else they widen the page on phones). */
+#gtm .gtm-kanban { position: relative; display: grid; grid-template-columns: repeat(5, minmax(150px, 1fr)); gap: var(--sp-2); overflow-x: auto; padding-bottom: 4px; }
 #gtm .gtm-kcol { background: var(--surface-2); border-radius: var(--r-md); padding: var(--sp-2); min-height: 140px; }
 #gtm .gtm-kcol h3 { font-size: var(--fs-ui); font-weight: 600; padding: 2px 4px var(--sp-2); display: flex; gap: 6px; align-items: baseline; }
 #gtm .gtm-kcol h3 .n { color: var(--text-3); font-weight: 500; }
@@ -268,6 +274,13 @@
 }
 
 @media (max-width: 640px) {
+  #gtm table.gtm-mini th, #gtm table.gtm-mini td { padding: 5px 4px; font-size: 12px; }
+  #gtm .gtm-stat { padding: var(--sp-3); }
+  #gtm table.gtm-mini td .muted { display: block; }
+  #gtm .gtm-audit { max-height: 520px; overflow: auto; }
+  #gtm .gtm-cards .gtm-ts { white-space: normal; }
+  #gtm .gtm-cards .gtm-action, #gtm .gtm-audit td.gtm-wrap { white-space: normal; overflow-wrap: anywhere; }
+  #gtm .gtm-cards td.gtm-src { max-width: none; }
   #gtm .gtm-title h2 { font-size: var(--fs-h2); }
   #gtm .gtm-run-pick { width: 100%; }
   #gtm .gtm-select { flex: 1; min-width: 0; max-width: none; }

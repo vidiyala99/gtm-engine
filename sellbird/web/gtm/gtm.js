@@ -68,6 +68,19 @@ function gIcon(id, cls) {
   return '<svg class="icon' + (cls ? ' ' + cls : '') + '" aria-hidden="true"><use href="#' + id + '"/></svg>';
 }
 
+// One toast at a time: a new one replaces the one still showing, so two never overlap.
+function gToast(msg, type) {
+  document.querySelectorAll('body > .toast').forEach(t => t.remove());
+  showToast(msg, type);
+}
+
+// An event's own cost: blank when it cost nothing, never rounded down to $0.000.
+function gEventCost(n) {
+  const v = Number(n) || 0;
+  if (v <= 0) return '';
+  return v < 0.001 ? '<$0.001' : gMoney(v);
+}
+
 function gMoney(n) {
   const v = Number(n) || 0;
   return '$' + (v < 1 ? v.toFixed(3) : v.toFixed(2));
@@ -243,17 +256,17 @@ async function gPost(path, body, applyLocal, okMsg) {
   if (gIsLocal()) {
     applyLocal();
     gRender();
-    showToast(okMsg + ' (fixture: kept in this tab only)', 'success');
+    gToast(okMsg + ' (fixture: kept in this tab only)', 'success');
     return true;
   }
   const res = await api('/api/gtm/runs/' + encodeURIComponent(gtm.runId) + path, {
     method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(body),
   });
   if (!res || res.success === false) {
-    showToast(failMsg(res, 'The server did not accept that.') + '', 'error');
+    gToast(failMsg(res, 'The server did not accept that.') + '', 'error');
     return false;
   }
-  showToast(okMsg, 'success');
+  gToast(okMsg, 'success');
   if (res.intake && res.id === gtm.runId) { gtm.run = res; gtm.updatedAt = new Date(); }  // lane A answers with the run
   else await gLoadRun();
   gRender();
@@ -262,8 +275,8 @@ async function gPost(path, body, applyLocal, okMsg) {
 
 async function gAgentReview(draftId) {
   const res = await api('/api/gtm/band/review/' + encodeURIComponent(gtm.runId) + '/' + encodeURIComponent(draftId), {method: 'POST'});
-  if (!res || res.success === false) { showToast(failMsg(res, 'The agent review did not start.'), 'error'); return; }
-  showToast('Agent review started: planner, builder, reviewer, security', 'success');
+  if (!res || res.success === false) { gToast(failMsg(res, 'The agent review did not start.'), 'error'); return; }
+  gToast('Agent review started: planner, builder, reviewer, security', 'success');
   await gLoadFeed();
   gRender();
 }
@@ -345,7 +358,7 @@ async function gSubmitIntake(form) {
   gRemember(id, intake.product);
   gtm.view = 'icp';
   sessionStorage.setItem('gtm-view', 'icp');
-  showToast('Run ' + id + ' started', 'success');
+  gToast('Run ' + id + ' started', 'success');
   await gLoadRuns();
   gSwitchRun(id);
 }
@@ -385,7 +398,7 @@ function gBind(root) {
     else if (a === 'edit-cancel') { gtm.editing = null; gRender(); }
     else if (a === 'edit-save') {
       const body = document.getElementById('gtm-edit-' + v).value.trim();
-      if (!body) { showToast('A draft cannot be empty', 'error'); return; }
+      if (!body) { gToast('A draft cannot be empty', 'error'); return; }
       gtm.editing = null;
       gDraftAction(v, 'edit', {body});
     }
@@ -402,7 +415,7 @@ function gBind(root) {
     else if (a === 'exp-adjust-save') {
       const i = Number(el.dataset.i);
       const segment = document.getElementById('gtm-adjust-' + i).value.trim();
-      if (!segment) { showToast('Write the segment as it should read', 'error'); return; }
+      if (!segment) { gToast('Write the segment as it should read', 'error'); return; }
       gtm.adjusting = null;
       gExpansionAction(i, 'adjusted', segment);
     }
@@ -645,19 +658,20 @@ function gContacts(run, ix) {
   const rows = ppl.map(p => {
     const co = ix.companies[p.company_id];
     const li = gUrl(p.linkedin_url);
-    return '<tr><td class="gtm-co"><div class="cell-main">' + gEsc(p.name) + '</div><div class="cell-sub">' + gEsc(p.title) + '</div></td>' +
+    // Profile sits under the name and MX under the status, so the sheet fits 1440 px without a sideways scroll.
+    return '<tr><td class="gtm-co"><div class="cell-main">' + gEsc(p.name) + '</div><div class="cell-sub">' + gEsc(p.title) + '</div>' +
+        (li ? '<a class="gtm-profile" href="' + gEsc(li) + '" target="_blank" rel="noopener noreferrer">LinkedIn profile</a>' : '<div class="cell-sub">No LinkedIn found</div>') + '</td>' +
       '<td data-label="Company">' + gEsc(co ? co.name : p.company_id) + '</td>' +
       '<td class="gtm-email gtm-full" data-label="Email">' + (p.email ? gEsc(gMaskEmail(p.email)) : '<span class="muted">None found</span>') + '</td>' +
-      '<td data-label="Status">' + gEmailBadge(p.email_status) + '</td>' +
-      '<td data-label="MX">' + (p.mx_ok === true ? '<span class="mini t-good">MX ok</span>' : p.mx_ok === false ? '<span class="mini t-bad">No MX</span>' : '<span class="mini t-idle">Not checked</span>') + '</td>' +
+      '<td data-label="Status"><div class="gtm-stack">' + gEmailBadge(p.email_status) +
+        (p.mx_ok === true ? '<span class="mini t-good">MX ok</span>' : p.mx_ok === false ? '<span class="mini t-bad">No MX</span>' : '<span class="mini t-idle">MX not checked</span>') + '</div></td>' +
       '<td class="num" data-label="Confidence">' + gConf(p.confidence) + '</td>' +
-      '<td data-label="Profile">' + (li ? '<a href="' + gEsc(li) + '" target="_blank" rel="noopener noreferrer">LinkedIn</a>' : '<span class="muted">None</span>') + '</td>' +
-      '<td class="gtm-cites" data-label="Source">' + (p.citations || []).map(x => gCite(x)).join('') + '</td></tr>';
+      '<td class="gtm-cites gtm-src" data-label="Source">' + (p.citations || []).map(x => gCite(x)).join('') + '</td></tr>';
   }).join('');
   const mask = gIsLocal() ? '' : '<button class="btn btn-sm btn-ghost" type="button" data-act="mask" aria-pressed="' + gtm.maskEmails + '">' +
     (gtm.maskEmails ? 'Show emails' : 'Mask emails') + '</button>';
   return '<div class="subhead">Contacts <span class="hint">' + mask + '</span></div>' +
-    '<div class="table-card gtm-sheet gtm-cards"><table><thead><tr><th>Person</th><th>Company</th><th>Email</th><th>Status</th><th>MX</th><th class="num">Confidence</th><th>Profile</th><th>Source</th></tr></thead><tbody>' + rows + '</tbody></table></div>';
+    '<div class="table-card gtm-sheet gtm-cards"><table><thead><tr><th>Person and profile</th><th>Company</th><th>Email</th><th>Status and MX</th><th class="num">Confidence</th><th>Source</th></tr></thead><tbody>' + rows + '</tbody></table></div>';
 }
 
 // ── Competitors ──
@@ -994,14 +1008,14 @@ function gAuditLog(run) {
   const shown = all.filter(e => f === 'all' || e.actor === f);
   const filters = [['all', 'All'], ['ai', 'AI'], ['rep', 'Rep']].map(([k, l]) =>
     '<button type="button" data-act="audit-actor" data-v="' + k + '"' + (f === k ? ' class="on" aria-pressed="true"' : '') + '>' + l + '</button>').join('');
-  const rows = shown.map(e => '<tr><td class="gtm-ts" title="' + gEsc(e.at) + '">' + gEsc(new Date(e.at).toLocaleString([], {month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit'})) + '</td>' +
-    '<td><span class="tag' + (e.actor === 'rep' ? ' accent' : '') + '">' + (e.actor === 'rep' ? 'Rep' : 'AI') + '</span></td>' +
-    '<td>' + gEsc(e.agent) + '</td><td class="gtm-action">' + gEsc(e.action) + '</td><td class="gtm-wrap">' + gEsc(e.target) +
+  const rows = shown.map(e => '<tr><td class="gtm-ts gtm-full" title="' + gEsc(e.at) + '">' + gEsc(new Date(e.at).toLocaleString([], {month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit'})) + '</td>' +
+    '<td data-label="By"><span class="tag' + (e.actor === 'rep' ? ' accent' : '') + '">' + (e.actor === 'rep' ? 'Rep' : 'AI') + '</span></td>' +
+    '<td data-label="Agent">' + gEsc(e.agent) + '</td><td class="gtm-action" data-label="Action">' + gEsc(e.action) + '</td><td class="gtm-wrap gtm-full" data-label="Target">' + gEsc(e.target) +
     (e.detail ? '<div class="cell-sub">' + gEsc(e.detail) + '</div>' : '') + '</td>' +
-    '<td class="num">' + (e.tokens ? gNum(e.tokens) : '<span class="muted">0</span>') + '</td>' +
-    '<td class="num">' + (e.cost_usd ? gMoney(e.cost_usd) : '<span class="muted">$0</span>') + '</td></tr>').join('');
+    '<td class="num" data-label="Tokens">' + (e.tokens ? gNum(e.tokens) : '<span class="muted">0</span>') + '</td>' +
+    '<td class="num" data-label="Cost">' + (e.cost_usd ? gMoney(e.cost_usd) : '<span class="muted">$0</span>') + '</td></tr>').join('');
   return '<div class="subhead">Audit log <span class="hint"><span class="segmented" role="group" aria-label="Filter audit log">' + filters + '</span></span></div>' +
-    '<div class="table-card gtm-sheet gtm-audit"><table><thead><tr><th>When</th><th>By</th><th>Agent</th><th>Action</th><th>Target</th><th class="num">Tokens</th><th class="num">Cost</th></tr></thead>' +
+    '<div class="table-card gtm-sheet gtm-cards gtm-audit"><table><thead><tr><th>When</th><th>By</th><th>Agent</th><th>Action</th><th>Target</th><th class="num">Tokens</th><th class="num">Cost</th></tr></thead>' +
     '<tbody>' + (rows || '<tr><td colspan="7" class="muted">Nothing logged yet</td></tr>') + '</tbody></table></div>';
 }
 
@@ -1023,12 +1037,12 @@ function gThinking(run) {
       detail: m.text || m.content || '', tokens: 0, cost: 0, ownTokens: m.tokens || 0, band: true});
   });
   items.sort((a, b) => a.t - b.t);
-  let cum = 0, tok = 0;
-  items.forEach(it => { cum += it.cost; tok += it.tokens; it.cum = cum; if (it.band) it.tokens = it.ownTokens; });
+  let cum = 0, tok = 0;  // cumulative totals go in the header only; each row shows its own cost
+  items.forEach(it => { cum += it.cost; tok += it.tokens; if (it.band) it.tokens = it.ownTokens; });
   const rows = items.slice().reverse().slice(0, 80).map(it => '<li class="' + (it.rep ? 'rep' : it.band ? 'band' : '') + '">' +
     '<div class="gtm-feed-meta"><b>' + gEsc(it.who) + '</b>' + (it.band ? ' <span class="tag">BAND</span>' : '') +
     '<span>' + (it.t ? gEsc(gTime(it.t)) : '') + '</span>' +
-    '<span class="gtm-feed-cost">' + (it.tokens ? gNum(it.tokens) + ' tok, ' : '') + gMoney(it.cum) + '</span></div>' +
+    '<span class="gtm-feed-cost">' + [it.tokens ? gNum(it.tokens) + ' tok' : '', gEsc(gEventCost(it.cost))].filter(Boolean).join(', ') + '</span></div>' +
     '<div class="gtm-feed-what">' + gEsc(it.what) + '</div>' +
     (it.detail ? '<div class="gtm-feed-detail">' + gEsc(it.detail) + '</div>' : '') + '</li>').join('');
   const open = sessionStorage.getItem('gtm-thinking') !== 'closed';
