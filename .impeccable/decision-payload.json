@@ -1,0 +1,97 @@
+{
+  "title": "Choose the visual world for ONE",
+  "question": "The roll assigned Course Log. Keep it, take an alternate, or re-roll.",
+  "options": [
+    {
+      "id": "assigned", "kind": "assigned", "kicker": "THE ROLL",
+      "label": "Course Log",
+      "lineage": "a navigator's chart table: plotted course, fixes, heading changes",
+      "thesis": "GTM strategy as a plotted course: every heading change is pinned to the evidence that forced it.",
+      "palette": ["#0f2a3d", "#f4f6f8", "#1f6feb", "#c98a14", "#c2412d"],
+      "materials": ["chart-table navy shell", "plotting-pen blue on white work areas"],
+      "viewport": "Navy rail with the ONE workspaces; Overview leads with Today's findings; a course strip across the top plots the 90-day strategy, each bend labeled with the learning that caused it.",
+      "risk": "If the course strip is decorative instead of clickable, it reads as a theme.",
+      "raised": [
+        {"from": "challenger-star-atlas", "raise": "Signal priority is one fixed magnitude ramp: dot size alone carries importance, everywhere."},
+        {"from": "challenger-metro", "raise": "Card chrome is deleted: hierarchy comes from the type scale, not boxes."},
+        {"from": "challenger-feed", "raise": "Today's findings show one finding expanded at a time; the rest wait one key away."},
+        {"from": "challenger-split-flap", "raise": "Agent activity rows are live entities: columns never move, state restyles the row in place."}
+      ],
+      "html": ".impeccable/mocks/decision/assigned.html"
+    },
+    {
+      "id": "model-pick", "kind": "pick", "kicker": "IMPECCABLE’S PICK",
+      "label": "Lab Notebook",
+      "lineage": "a research lab notebook: hypothesis, evidence, revision, signed and dated",
+      "thesis": "Every ICP and strategy is a dated hypothesis with evidence footnotes and visible revisions.",
+      "palette": ["#14181f", "#fafaf7", "#2b59c3", "#2f855a", "#b7791f"],
+      "materials": ["numbered entries", "footnote evidence markers"],
+      "viewport": "Sidebar app; Overview reads as today's entries: each finding a numbered hypothesis with confidence, footnoted evidence and a revise action.",
+      "risk": "The closest to what most AI-native GTM tools already look like.",
+      "html": ".impeccable/mocks/decision/model-pick.html"
+    },
+    {
+      "id": "challenger-transit", "kind": "challenger", "catalogId": "wayfinding-cartography-signage-midnight-transit-diagram",
+      "label": "Transit Diagram", "verdict": "competitive",
+      "lineage": "metropolitan rail diagram on midnight enamel",
+      "thesis": "Customer journeys and agent handoffs drawn as transit lines with interchanges.",
+      "palette": ["#101b33", "#f5f5f0", "#e03a3e", "#2f6fd6", "#f2a900", "#2e9e5b"],
+      "materials": ["45 and 90 degree lines", "interchange circles"],
+      "viewport": "Midnight shell; Funnels and journeys as lines by channel meeting at stations (meeting, opportunity, closed).",
+      "case": "Holds product clarity for multi-touch journeys; weaker on audience identification for daily triage.",
+      "risk": "Beautiful on Funnels, forced on tables and settings.",
+      "hero": "https://impeccable.style/worlds/cards/wayfinding-cartography-signage-midnight-transit-diagram-hero.webp",
+      "html": ".impeccable/mocks/decision/challenger-transit.html"
+    },
+    {
+      "id": "challenger-wallet", "kind": "challenger", "catalogId": "vernacular-ephemera-jet-age-ticket-wallet",
+      "label": "Ticket Wallet", "verdict": "competitive",
+      "lineage": "jet-age airline coupon books",
+      "thesis": "Every action is a coupon: approved, used or void is stamped on it, and nothing silently disappears.",
+      "palette": ["#16264d", "#ffffff", "#c8102e", "#5b3f8c"],
+      "materials": ["coupon stock", "carbon stamps"],
+      "viewport": "Action Center as a coupon book: each recommended action a coupon with owner, reason and an approve stamp.",
+      "case": "Holds product clarity for approvals and audit; loses audience identification.",
+      "risk": "Reads novelty if the coupon form leaks past the Action Center.",
+      "hero": "https://impeccable.style/worlds/cards/vernacular-ephemera-jet-age-ticket-wallet-hero.webp",
+      "html": ".impeccable/mocks/decision/challenger-wallet.html"
+    },
+    {
+      "id": "challenger-star-atlas", "kind": "challenger", "catalogId": "notation-diagram-systems-star-atlas", "label": "Star Atlas", "verdict": "declined",
+      "lineage": "celestial star charts", "thesis": "Signals plotted as magnitude-ranked stars.", "palette": ["#0b1530", "#f2f2ea", "#d9480f"],
+      "materials": ["magnitude dots"], "viewport": "Signal field as a sky chart.", "risk": "Founders do not read their pipeline as astronomy.",
+      "case": "Loses both axes for daily GTM work.", "kept": "One fixed size ramp for importance."
+    },
+    {
+      "id": "challenger-metro", "kind": "challenger", "catalogId": "digital-design-canon-metro-typographic-tiles", "label": "Metro Tiles", "verdict": "declined",
+      "lineage": "flat typographic tiles", "thesis": "Type is the interface.", "palette": ["#000000", "#00aba9", "#ffffff"],
+      "materials": ["flat tiles"], "viewport": "Panorama of tiles.", "risk": "Dated and sparse for dense GTM data.",
+      "case": "Loses both axes.", "kept": "Hierarchy by type scale, no card chrome."
+    },
+    {
+      "id": "challenger-feed", "kind": "challenger", "catalogId": "pop-culture-shelf-vertical-video-feed-surface", "label": "Vertical Feed", "verdict": "declined",
+      "lineage": "full-screen vertical feed", "thesis": "One item owns the screen.", "palette": ["#000000", "#ffffff"],
+      "materials": ["full-bleed media"], "viewport": "One finding per screen.", "risk": "Hides the comparisons GTM work depends on.",
+      "case": "Loses both axes.", "kept": "One finding in focus at a time."
+    },
+    {
+      "id": "challenger-split-flap", "kind": "challenger", "catalogId": "signals-instruments-split-flap-concourse", "label": "Split-Flap Board", "verdict": "declined",
+      "lineage": "rail concourse departure board", "thesis": "Live rows, fixed columns.", "palette": ["#111111", "#f5f5f5", "#f0a202"],
+      "materials": ["flap cells"], "viewport": "Agent activity as a departures board.", "risk": "Costume of an instrument on a working screen.",
+      "case": "Loses both axes.", "kept": "Rows update in place; columns never move."
+    }
+  ],
+  "reroll": {"registers": ["safer", "bolder"]},
+  "buildPath": {"value": "code"},
+  "canon": true,
+  "canonCard": {
+    "kind": "canon", "label": "The category standard",
+    "thesis": "Linear-clean, Attio-dense GTM workspace, executed at full craft.",
+    "palette": ["#ffffff", "#0f1115", "#5e6ad2"],
+    "materials": ["neutral grid", "compact tables"],
+    "viewport": "Sidebar, metric strip, insight feed, side drawer.",
+    "risk": "Indistinguishable from the competition by design.",
+    "html": ".impeccable/mocks/decision/canon.html"
+  },
+  "steer": true
+}
