@@ -159,3 +159,15 @@ def test_routes_reject_unknown_kind_and_run():
     c = client()
     assert c.get("/api/gtm/runs/fixture/paths/astrology").status_code == 404
     assert c.get("/api/gtm/runs/nope/graph").status_code == 404
+
+
+@pytest.mark.parametrize("engine", ENGINES)
+def test_displacement_alias_serves_competitor_displacement(monkeypatch, engine):
+    """Lane C asks for /paths/displacement; it gets the same paths as competitor_displacement."""
+    import gtm.graph.routes as routes
+    monkeypatch.setattr(routes, "load_run", lambda run_id: displacement_run())
+    c = client()
+    short = c.get("/api/gtm/runs/fixture/paths/displacement", params={"engine": engine}).json()
+    full = c.get("/api/gtm/runs/fixture/paths/competitor_displacement", params={"engine": engine}).json()
+    assert short == full and short["kind"] == "competitor_displacement"
+    assert [n["id"] for n in short["paths"][0]["nodes"]][:2] == ["company:co_initech", "competitor:queryco"]

@@ -5,6 +5,21 @@
 - Add `band-sdk` to `pyproject.toml` when BAND goes live.
 - Fixture: no company has a competitor-use + churn signal, so `/paths/competitor_displacement` is empty on it. Tests build one in code.
 
+## Round 2
+### Step 1: mock BAND with the real model: done
+- Model login works through `.venv/bin/python` (Sellbird Brain, Claude plan).
+- First d_1 run was rejected wrongly: the Builder listed facts from the Planner's handoff (title, tier, scores) as draft claims, and the hard guard counted each one as unsupported. Fix: Builder and Reviewer prompts now count only the words in the draft's subject and body; a greeting name is not a claim; a fragment cut off with "..." counts only for what it states before the cut.
+- CLI: `--mode live|mock` before the command (one run only, `.env` untouched); `reset DRAFT...` sets fixture drafts back to pending.
+- Result (`cli --mode mock review fixture d_1`, then `d_3`):
+  - d_1 → `awaiting_rep`. #4 planner→@builder tok=2600 · #5 builder→@reviewer tok=2884 · #6 reviewer→@security PASS ("all completed claims supported by sig_1; the truncated fragment states nothing") tok=3005 · #7 security→@rep,planner approval_request PASS tok=2383. Cost for d_1: $0.0218.
+  - d_3 → `rejected`. #8 planner tok=2567 · #9 builder tok=3355 · #10 reviewer→@builder,planner REJECT: unsupported claim "New data leaders usually inherit a report backlog" (no signal) tok=3114. Cost for d_3: $0.0255.
+  - Feed total, including the wrong first d_1 run (#1-#3): 10 messages, 29,018 tokens, $0.0738 (cost as reported by Sellbird's usage rows).
+
+### Step 3: path alias: done
+- `/paths/displacement` serves `competitor_displacement` (same body, `kind` is the canonical name). Test: `test_displacement_alias_serves_competitor_displacement` (both engines).
+
+### Step 2: live BAND: next
+
 ## Graph (`gtm/graph/`): done
 - Engine: **kuzu 0.11.3** (21 MB wheel, embedded, works on the lane). Plain-Python traversal behind the same `paths()` is the fallback; tests hold both engines to identical output.
 - One kuzu file per run in `data/gtm/graph/<run_id>.kuzu`, rebuilt when the run's graph changes; buffer pool capped at 64 MB.
@@ -36,7 +51,7 @@
 - **Claude CLI on the lane is not logged in for headless calls**: `claude -p` returns "Not logged in · Please run /login" with or without Sellbird's isolation flags. No `~/.claude/.credentials.json`. Every BAND agent decision needs it. Owner: run `claude login` (or `claude setup-token` and put `CLAUDE_CODE_OAUTH_TOKEN` in the lane env). I did not work around auth.
 
 ## Tests
-- `python -m pytest -q gtm/tests`: 39 passed on lane-b with main merged (Run.status).
+- `python -m pytest -q gtm/tests`: 41 passed (round 2).
 
 ## Lane A integration
 - `gtm/graph/runs.py` reads with `gtm.pipeline.store.load` and writes BAND events with `store.update` (locked read-modify-write), matching lane A's store on `origin/lane-a`. Test holds it to that API with a stand-in module.

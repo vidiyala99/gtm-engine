@@ -119,9 +119,16 @@ def competitor_displacement(graph: Graph) -> list[Path]:
 
 PYTHON = {"warm_intro": warm_intro, "buying_cycle": buying_cycle, "competitor_displacement": competitor_displacement}
 KINDS = tuple(PYTHON)
+ALIASES = {"displacement": "competitor_displacement"}  # lane C's name for the same path
+
+
+def canonical_kind(kind: str) -> str:
+    """The served path kind for a name or alias; unknown names pass through unchanged."""
+    return ALIASES.get(kind, kind)
 
 
 def paths(graph: Graph, kind: str, engine: str = "auto", target: str | None = None) -> list[Path]:
+    kind = canonical_kind(kind)
     if kind not in PYTHON:
         raise KeyError(kind)
     if engine in ("auto", "kuzu"):

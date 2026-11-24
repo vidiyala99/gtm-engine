@@ -6,7 +6,7 @@ from fastapi import APIRouter, HTTPException
 from fastapi.concurrency import run_in_threadpool
 
 from gtm.graph import build, paths
-from gtm.graph.queries import KINDS
+from gtm.graph.queries import KINDS, canonical_kind
 from gtm.graph.runs import RunNotFound, load_run
 
 router = APIRouter()
@@ -27,6 +27,7 @@ async def run_graph(run_id: str):
 
 @router.get("/api/gtm/runs/{run_id}/paths/{kind}")
 async def run_paths(run_id: str, kind: str, target: str | None = None, engine: str = "auto"):
+    kind = canonical_kind(kind)
     if kind not in KINDS:
         raise HTTPException(404, f"unknown path kind {kind}; one of {', '.join(KINDS)}")
     if engine not in ("auto", "kuzu", "python"):

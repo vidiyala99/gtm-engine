@@ -205,7 +205,7 @@ class ReviewRoom:
                 return Outcome(run_id, draft_id, "blocked", sv.reason, sv.details)
             item = await self._post(
                 run_id, draft_id, "security", ["rep", "planner"],
-                f"PASS: {sv.reason}. Approval needed: {lead.draft.channel} draft {draft_id} to {lead.who()}. "
+                f"PASS: {sv.reason.rstrip('.')}. Approval needed: {lead.draft.channel} draft {draft_id} to {lead.who()}. "
                 f"Reply 'approve {draft_id}' or 'reject {draft_id}' (mention @planner).",
                 "approval_request", sec, action="band.security.pass")
             self.awaiting[key] = {"room": await self.room(), "asked_at": self._last_sent_t, "seq": item.seq}
