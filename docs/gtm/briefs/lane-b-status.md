@@ -23,6 +23,15 @@
 - Each message → feed item (tokens, cumulative cost) + `AuditEvent` on the run. Feed and waiting state persist in `data/gtm/band/`.
 - Routes: `GET /api/gtm/band/feed?since=N`, `POST /api/gtm/band/review/{run}/{draft}?wait=true`, `POST /api/gtm/band/rep/{run}/{draft}` (mock only), `POST /api/gtm/band/poll` (live; also auto-polls every 5 s while waiting).
 
+- Live transport: the rep's id is resolved from `GTM_BAND_REP_HANDLE` among the planner's peers (found: a User peer); rep replies read newest-first; "asked at" uses BAND's clock.
+- Read-only live probe worked (identity + peers). Note: the four BAND agents are the reused HEEL TURN wrestler identities (display names like "Brutus Kane"); rename them in the Band app if that matters for the video.
+- CLI: `python -m gtm.band.cli smoke | review RUN DRAFT | wait RUN DRAFT [sec] | feed`.
+- Checked through Sellbird's real dashboard app (in-process, temp state): no token → 401; `/graph` 200 (13 nodes, 14 edges); `/paths/warm_intro?target=p_3` → kuzu: Riley → Globex Pay → Dana → product; `/band/review/fixture/d_1` → `stalled` (CLI logged out), draft stays `pending`.
+
+## Next (owner)
+1. Log the lane's Claude CLI in (below). Then mock run with the real model: `python -m gtm.band.cli review fixture d_1`.
+2. Go live: set `GTM_BAND_MODE=live` in `.env`, run `python -m gtm.band.cli smoke` (creates 1 pooled room), then `review` and reply `approve d_1` to the planner in the Band app; `wait` picks it up. My live send needed an approval this session doesn't have, so it has not run yet.
+
 ## Blocks
 - **Claude CLI on the lane is not logged in for headless calls**: `claude -p` returns "Not logged in · Please run /login" with or without Sellbird's isolation flags. No `~/.claude/.credentials.json`. Every BAND agent decision needs it. Owner: run `claude login` (or `claude setup-token` and put `CLAUDE_CODE_OAUTH_TOKEN` in the lane env). I did not work around auth.
 

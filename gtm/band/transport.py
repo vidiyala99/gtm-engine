@@ -146,10 +146,27 @@ class LiveBand:
         self._clients: dict[str, object] = {}
         self.ids = {p: _env(p, "ID") for p in cast}
         self.handles = {p: os.environ.get(f"GTM_BAND_{p.upper()}_HANDLE") for p in cast}
-        missing = [f"GTM_BAND_{p.upper()}_{s}" for p, k in cast.items() for s in (("ID", "KEY") if k == "agent" else ("ID",))
+        missing = [f"GTM_BAND_{p.upper()}_{s}" for p, k in cast.items() if k == "agent" for s in ("ID", "KEY")
                    if not os.environ.get(f"GTM_BAND_{p.upper()}_{s}")]
+        missing += [f"GTM_BAND_{p.upper()}_ID or _HANDLE" for p, k in cast.items()
+                    if k == "human" and not (self.ids[p] or self.handles[p])]
         if missing:
             raise RuntimeError("live BAND needs env: " + ", ".join(missing))
+        self._resolve_humans()
+
+    def _resolve_humans(self) -> None:
+        """A human (the rep) given only by handle: find their user id among an agent's peers."""
+        want = {p: self.handles[p] for p, k in self.cast.items() if k == "human" and not self.ids[p]}
+        if not want:
+            return
+        asker = next(p for p, k in self.cast.items() if k == "agent")
+        resp = self._client(asker).agent_api_peers.list_agent_peers(page_size=100, request_options=self._opts())
+        by_handle = {p.handle.lstrip("@"): p.id for p in (getattr(resp, "data", None) or [])}
+        for pid, handle in want.items():
+            self.ids[pid] = by_handle.get(handle.lstrip("@"))
+        unresolved = [f"GTM_BAND_{p.upper()}_HANDLE={h}" for p, h in want.items() if not self.ids[p]]
+        if unresolved:
+            raise RuntimeError("live BAND: no peer with " + ", ".join(unresolved) + "; set GTM_BAND_<ROLE>_ID")
 
     def _client(self, actor: str):
         from band_rest import RestClient
@@ -248,8 +265,9 @@ class LiveBand:
 
     def verdicts(self, room: str, judge: str, proposer: str) -> list[Message]:
         """Read the proposer's room messages and keep the ones the rep sent."""
-        resp = self._client(proposer).agent_api_messages.list_agent_messages(room, status="all", request_options=self._opts())
-        data = getattr(resp, "data", None) or []
+        resp = self._client(proposer).agent_api_messages.list_agent_messages(
+            room, status="all", sort_order="desc", limit=100, request_options=self._opts())
+        data = list(reversed(getattr(resp, "data", None) or []))  # newest page, oldest first
         judge_id = self.ids[judge]
         out = []
         for m in data:

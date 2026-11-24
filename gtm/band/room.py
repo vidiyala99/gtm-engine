@@ -10,7 +10,6 @@ from __future__ import annotations
 
 import asyncio
 import json
-import time
 from dataclasses import asdict, dataclass, field
 from datetime import datetime, timezone
 from pathlib import Path
@@ -64,6 +63,7 @@ class ReviewRoom:
         self.seen_rep: set[str] = set()
         self._locks: dict[str, asyncio.Lock] = {}
         self._room: str | None = None
+        self._last_sent_t = 0.0
         self._load()
 
     # --- persistence --------------------------------------------------------------
@@ -120,7 +120,8 @@ class ReviewRoom:
                     note: str | None = None) -> FeedItem:
         rid = await self.room()
         tag = f"[{run_id}/{draft_id}] "
-        await asyncio.to_thread(self.band.send, rid, sender, tag + text, to)
+        sent = await asyncio.to_thread(self.band.send, rid, sender, tag + text, to)
+        self._last_sent_t = sent.t  # BAND's clock in live mode, so rep replies compare on one clock
         item = FeedItem(seq=(self.feed[-1].seq + 1) if self.feed else 1, at=_now().isoformat(), run_id=run_id,
                         draft_id=draft_id, sender=sender, to=list(to), text=text, kind=kind,
                         tokens=reply.tokens if reply else 0, cost_usd=reply.cost_usd if reply else 0.0,
@@ -207,7 +208,7 @@ class ReviewRoom:
                 f"PASS: {sv.reason}. Approval needed: {lead.draft.channel} draft {draft_id} to {lead.who()}. "
                 f"Reply 'approve {draft_id}' or 'reject {draft_id}' (mention @planner).",
                 "approval_request", sec, action="band.security.pass")
-            self.awaiting[key] = {"room": await self.room(), "asked_at": time.time(), "seq": item.seq}
+            self.awaiting[key] = {"room": await self.room(), "asked_at": self._last_sent_t, "seq": item.seq}
             self._save_state()
             return Outcome(run_id, draft_id, "awaiting_rep", "waiting for the rep's reply in BAND")
 
