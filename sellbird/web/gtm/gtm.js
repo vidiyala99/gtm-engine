@@ -24,7 +24,7 @@ const GTM_EMAIL = {
   guess: ['t-idle', 'Guess'], invalid: ['t-bad', 'Invalid'], unknown: ['t-idle', 'Unknown'],
 };
 const GTM_PATHS = [
-  ['warm_intro', 'Warm intro'], ['buying_cycle', 'Buying cycle'], ['displacement', 'Competitor displacement'],
+  ['warm_intro', 'Warm intro'], ['buying_cycle', 'Buying cycle'], ['competitor_displacement', 'Competitor displacement'],
 ];
 
 const gtm = {
@@ -163,14 +163,26 @@ async function gLoadRun() {
   if (gIsLocal() && gtm.run && gtm.run.id === GTM_FIXTURE) return;
   gtm.run = data;
   gtm.updatedAt = new Date();
+  await gLoadFeed();
+}
+
+async function gLoadFeed() {
   const feed = await api('/api/gtm/band/feed');
   gtm.feed = feed && !feed.detail ? feed : null;
+}
+
+// Lane B lists drafts waiting on the rep as [run_id, draft_id] pairs (or "run/draft").
+function gAwaitingRep(draftId) {
+  const list = gtm.feed && gtm.feed.awaiting_rep || [];
+  return list.some(x => Array.isArray(x) ? x[0] === gtm.runId && x[1] === draftId
+    : String(x) === gtm.runId + '/' + draftId || String(x) === draftId);
 }
 
 async function gLoadRuns() {
   const saved = (() => { try { return JSON.parse(localStorage.getItem(GTM_RUNS_KEY) || '[]'); } catch { return []; } })();
   const listed = await api('/api/gtm/runs');
-  const fromApi = Array.isArray(listed) ? listed : (listed && Array.isArray(listed.runs) ? listed.runs : []);
+  const fromApi = Array.isArray(listed) ? listed
+    : (listed && (Array.isArray(listed.ids) ? listed.ids : Array.isArray(listed.runs) ? listed.runs : [])) || [];
   const seen = new Set([GTM_FIXTURE]);
   const runs = [{id: GTM_FIXTURE, label: 'Fixture (fictional)'}];
   fromApi.concat(saved).forEach(r => {
@@ -205,7 +217,7 @@ function gSchedule() {
       else gRenderLive();
     }
     gSchedule();
-  }, GTM_POLL_MS);
+  }, gtm.run && gtm.run.status && gtm.run.status !== 'running' ? GTM_POLL_MS * 4 : GTM_POLL_MS);
 }
 
 async function gSwitchRun(id) {
@@ -242,9 +254,18 @@ async function gPost(path, body, applyLocal, okMsg) {
     return false;
   }
   showToast(okMsg, 'success');
-  await gLoadRun();
+  if (res.intake && res.id === gtm.runId) { gtm.run = res; gtm.updatedAt = new Date(); }  // lane A answers with the run
+  else await gLoadRun();
   gRender();
   return true;
+}
+
+async function gAgentReview(draftId) {
+  const res = await api('/api/gtm/band/review/' + encodeURIComponent(gtm.runId) + '/' + encodeURIComponent(draftId), {method: 'POST'});
+  if (!res || res.success === false) { showToast(failMsg(res, 'The agent review did not start.'), 'error'); return; }
+  showToast('Agent review started: planner, builder, reviewer, security', 'success');
+  await gLoadFeed();
+  gRender();
 }
 
 function gDraftAction(id, action, extra) {
@@ -263,14 +284,17 @@ function gDraftAction(id, action, extra) {
   }, words[action]);
 }
 
-function gExpansionAction(i, status, note) {
+function gExpansionAction(i, status, segment) {
   const e = gtm.run.icp && gtm.run.icp.expansions && gtm.run.icp.expansions[i];
   if (!e) return;
   const words = {accepted: 'Segment accepted', adjusted: 'Segment adjusted', dismissed: 'Segment dismissed'};
-  return gPost('/expansions/' + i, {status, note: note || ''}, () => {
+  const body = {status};
+  if (segment) body.segment = segment;
+  return gPost('/expansions/' + i, body, () => {
+    const before = e.segment;
     e.status = status;
-    if (note) e.rationale = e.rationale + ' (rep: ' + note + ')';
-    gAudit('expansion.' + status, e.segment, note);
+    if (segment) e.segment = segment;
+    gAudit('expansion_' + status, 'expansion:' + i, segment && segment !== before ? before + ' -> ' + segment : before);
   }, words[status]);
 }
 
@@ -352,6 +376,10 @@ function gBind(root) {
     else if (a === 'audit-actor') { gtm.auditActor = v; gRender(); }
     else if (a === 'mask') { gtm.maskEmails = !gtm.maskEmails; gRender(); }
     else if (a === 'path') { gtm.pathKind = v; gtm.path = null; gRender(); }
+    else if (a === 'path-step' && gtm.path) {
+      gtm.path.i = Math.max(0, Math.min(gtm.path.paths.length - 1, gtm.path.i + Number(v)));
+      gRender();
+    }
     else if (a === 'approve') gDraftAction(v, 'approve');
     else if (a === 'edit') { gtm.editing = v; gtm.rejecting = null; gRender(); gFocus('#gtm-edit-' + v); }
     else if (a === 'edit-cancel') { gtm.editing = null; gRender(); }
@@ -373,11 +401,12 @@ function gBind(root) {
     else if (a === 'exp-adjust-cancel') { gtm.adjusting = null; gRender(); }
     else if (a === 'exp-adjust-save') {
       const i = Number(el.dataset.i);
-      const note = document.getElementById('gtm-adjust-' + i).value.trim();
-      if (!note) { showToast('Say how to adjust the segment', 'error'); return; }
+      const segment = document.getElementById('gtm-adjust-' + i).value.trim();
+      if (!segment) { showToast('Write the segment as it should read', 'error'); return; }
       gtm.adjusting = null;
-      gExpansionAction(i, 'adjusted', note);
+      gExpansionAction(i, 'adjusted', segment);
     }
+    else if (a === 'review') gAgentReview(v);
     else if (a === 'refresh') loadGtm();
   });
   root.addEventListener('change', e => {
@@ -428,7 +457,11 @@ function gRenderLive() {
 function gLiveText() {
   if (gIsLocal()) return '<span class="mini t-idle">Fixture, fictional data</span>';
   if (gtm.error) return '<span class="mini t-bad">Not loading</span>';
-  return '<span class="mini t-good">Live</span> <span class="muted">updated ' +
+  const st = gtm.run && gtm.run.status;
+  const badge = st === 'failed' ? '<span class="mini t-bad">Run failed</span>'
+    : st === 'done' ? '<span class="mini t-good">Run done</span>'
+    : '<span class="mini t-active">Running, live</span>';
+  return badge + ' <span class="muted">updated ' +
     (gtm.updatedAt ? gtm.updatedAt.toLocaleTimeString([], {hour: '2-digit', minute: '2-digit', second: '2-digit'}) : '') + '</span>';
 }
 
@@ -544,8 +577,8 @@ function gIcp(run) {
     const tone = {proposed: 't-waiting', accepted: 't-good', adjusted: 't-active', dismissed: 't-idle'}[st] || 't-idle';
     const adjusting = gtm.adjusting === i;
     const actions = adjusting
-      ? '<div class="gtm-inline-form"><label class="sr-only" for="gtm-adjust-' + i + '">How to adjust</label>' +
-          '<input class="form-input" id="gtm-adjust-' + i + '" placeholder="For example: only hospital networks over 1,000 staff">' +
+      ? '<div class="gtm-inline-form"><label class="sr-only" for="gtm-adjust-' + i + '">Segment as it should read</label>' +
+          '<input class="form-input" id="gtm-adjust-' + i + '" value="' + gEsc(e.segment) + '">' +
           '<button class="btn btn-primary btn-sm" type="button" data-act="exp-adjust-save" data-i="' + i + '">Save adjustment</button>' +
           '<button class="btn btn-ghost btn-sm" type="button" data-act="exp-adjust-cancel">Cancel</button></div>'
       : '<div class="gtm-actions">' +
@@ -653,15 +686,24 @@ function gCompetitors(run) {
 function gGraph() {
   const picker = GTM_PATHS.map(([k, l]) => '<button type="button" data-act="path" data-v="' + k + '"' +
     (gtm.pathKind === k ? ' class="on" aria-pressed="true"' : '') + '>' + l + '</button>').join('');
-  const p = gtm.path && gtm.path.kind === gtm.pathKind ? gtm.path : null;
+  const set = gtm.path && gtm.path.kind === gtm.pathKind ? gtm.path : null;
+  const p = set && set.paths[set.i];
   let body;
-  if (!p) body = '<div class="gtm-skeleton short" aria-busy="true"><i></i></div>';
-  else if (!p.nodes.length) body = emptyState('0', 'No path of this kind in this run', gEsc(p.note || 'The graph has no matching multi-hop path yet.'));
-  else body = '<figure class="gtm-path" id="gtm-path">' + gPathSvg(p) +
-    '<figcaption>' + gEsc(p.note || '') + ' <span class="muted">' +
-      (p.source === 'api' ? 'From the knowledge graph.' : 'Worked out in the browser from this run (graph API not reachable).') + '</span></figcaption></figure>' +
-    '<ol class="gtm-path-steps">' + p.nodes.map((n, i) => '<li><b>' + gEsc(n.label) + '</b> <span class="muted">' + gEsc(n.type) + '</span>' +
-      (p.edges[i] ? ' <span class="gtm-edge-word">' + gEsc(p.edges[i].type.replace(/_/g, ' ')) + '</span>' : '') + '</li>').join('') + '</ol>';
+  if (!set) body = '<div class="gtm-skeleton short" aria-busy="true"><i></i></div>';
+  else if (!p || !p.nodes.length) body = emptyState('0', 'No path of this kind in this run', gEsc(set.note || 'The graph has no matching multi-hop path yet.'));
+  else {
+    const pager = set.paths.length > 1
+      ? '<div class="gtm-pager"><span class="muted">Path ' + (set.i + 1) + ' of ' + set.paths.length + '</span>' +
+        '<button class="btn btn-sm btn-secondary" type="button" data-act="path-step" data-v="-1"' + (set.i ? '' : ' disabled') + '>Previous</button>' +
+        '<button class="btn btn-sm btn-secondary" type="button" data-act="path-step" data-v="1"' + (set.i < set.paths.length - 1 ? '' : ' disabled') + '>Next</button></div>' : '';
+    const sources = p.nodes.filter(n => gUrl(n.url)).map(n => gCite({url: n.url, title: n.label}, {})).join('');
+    body = pager + '<figure class="gtm-path" id="gtm-path">' + gPathSvg(p) +
+      '<figcaption>' + gEsc(p.note || '') + ' <span class="muted">' +
+        (set.source === 'api' ? 'From the knowledge graph' + (set.engine ? ' (' + gEsc(set.engine) + ')' : '') + '.' : 'Worked out in the browser from this run (graph API not reachable).') + '</span></figcaption></figure>' +
+      '<ol class="gtm-path-steps">' + p.nodes.map((n, i) => '<li><b>' + gEsc(n.label) + '</b> <span class="muted">' + gEsc(n.type) + '</span>' +
+        (p.edges[i] ? ' <span class="gtm-edge-word">' + gEsc(String(p.edges[i].type).replace(/_/g, ' ')) + '</span>' : '') + '</li>').join('') + '</ol>' +
+      (sources ? '<div class="gtm-path-sources"><span class="gtm-k">Sources</span>' + sources + '</div>' : '');
+  }
   return '<div class="toolbar"><div class="segmented" role="group" aria-label="Path kind">' + picker + '</div></div>' +
     '<div class="card gtm-graph-card">' + body + '</div>';
 }
@@ -669,31 +711,42 @@ function gGraph() {
 async function gGraphLoad(run, ix) {
   if (gtm.path && gtm.path.kind === gtm.pathKind) return;
   const kind = gtm.pathKind;
-  let path = null;
+  let set = null;
   const data = await api('/api/gtm/runs/' + encodeURIComponent(run.id) + '/paths/' + kind);
-  if (data && !data.detail) path = gNormalizePath(data, kind);
-  if (!path) path = gLocalPath(run, ix, kind);
+  if (data && !data.detail) {
+    const list = Array.isArray(data) ? data : data.paths ? data.paths : [data.path && !Array.isArray(data.path) ? data.path : data];
+    const paths = list.map(d => gNormalizePath(d, kind)).filter(Boolean);
+    set = {kind, source: 'api', engine: data.engine || '', paths, i: 0,
+      note: paths.length ? '' : data.note || 'The knowledge graph found no path of this kind in this run.'};
+  }
+  if (!set) { const lp = gLocalPath(run, ix, kind); set = {kind, source: 'local', paths: lp.nodes.length ? [lp] : [], i: 0, note: lp.note}; }
   if (gtm.pathKind !== kind || gtm.view !== 'graph') return;
-  gtm.path = path;
+  gtm.path = set;
   gRender();
 }
 
-// Lane B returns {nodes, edges} (or a list of such paths). Field names vary
-// between graph libraries, so read the common ones and order nodes along edges.
-function gNormalizePath(data, kind) {
-  let d = Array.isArray(data) ? data[0] : (data.paths ? data.paths[0] : (data.path && !Array.isArray(data.path) ? data.path : data));
-  if (!d) return {kind, source: 'api', nodes: [], edges: [], note: data.note || data.detail || ''};
-  if (Array.isArray(data.path)) d = {nodes: data.path.filter(x => !x.source && !x.from), edges: data.path.filter(x => x.source || x.from)};
-  const nodes = (d.nodes || []).map(n => ({id: String(n.id ?? n.key ?? n.name),
-    label: n.label || n.name || n.title || n.properties && n.properties.name || String(n.id),
-    type: n.type || n.kind || (Array.isArray(n.labels) ? n.labels[0] : n.labels) || ''}));
+// One path from lane B: {summary, nodes, edges}. Field names vary between
+// graph libraries, so read the common ones and order nodes along the edges.
+function gNormalizePath(d, kind) {
+  if (!d) return null;
+  if (Array.isArray(d.path)) d = {nodes: d.path.filter(x => !x.source && !x.from), edges: d.path.filter(x => x.source || x.from)};
+  // Lane B: {id, label: <node type>, name, props}. Others: {id, label|name, type}.
+  const nodes = (d.nodes || []).map(n => {
+    const props = n.props || n.properties || {};
+    return {id: String(n.id ?? n.key ?? n.name),
+      label: n.name || props.name || (n.type ? n.label : '') || n.title || String(n.id),
+      type: n.type || n.kind || (n.name ? n.label : '') || (Array.isArray(n.labels) ? n.labels[0] : n.labels) || '',
+      sub: props.title || props.summary || props.domain || props.observed_on || '',
+      url: props.source_url || props.url || ''};
+  });
   const edges = (d.edges || d.relationships || []).map(e => ({source: String(e.source ?? e.from ?? e.src ?? e.start),
     target: String(e.target ?? e.to ?? e.dst ?? e.end), type: e.type || e.kind || e.rel || e.label || ''}));
   if (!nodes.length) return null;
   // Order: walk from a node no edge points into.
   const byId = Object.fromEntries(nodes.map(n => [n.id, n]));
   const touches = id => edges.filter(e => e.source === id || e.target === id);
-  let start = nodes.find(n => touches(n.id).length <= 1) || nodes[0];
+  // Lane B lists nodes in path order: start at the first one when it is an end.
+  let start = touches(nodes[0].id).length <= 1 ? nodes[0] : nodes.find(n => touches(n.id).length <= 1) || nodes[0];
   const ordered = [start], oEdges = [], used = new Set();
   let cur = start.id;
   while (ordered.length < nodes.length) {
@@ -706,8 +759,9 @@ function gNormalizePath(data, kind) {
     ordered.push(byId[next]);
     cur = next;
   }
-  if (ordered.length < nodes.length) return {kind, source: 'api', nodes, edges, note: d.note || data.note || ''};
-  return {kind, source: 'api', nodes: ordered, edges: oEdges, note: d.note || data.note || d.summary || ''};
+  const note = d.summary || d.note || '';
+  if (ordered.length < nodes.length) return {kind, nodes, edges, note};
+  return {kind, nodes: ordered, edges: oEdges, note};
 }
 
 function gLocalPath(run, ix, kind) {
@@ -759,20 +813,32 @@ function gLocalPath(run, ix, kind) {
 }
 
 function gPathSvg(p) {
-  const n = p.nodes.length;
-  const W = 230, H = 92, GAP = 190, PAD = 8;
-  const width = n * W + (n - 1) * GAP + PAD * 2, height = H + 40;
+  // Up to three nodes a row; a longer path turns down to the next row with an
+  // elbow, so the type stays full size instead of shrinking to fit.
+  const n = p.nodes.length, PER = 3;
+  const W = 230, H = 92, GAP = 190, ROWGAP = 70, PAD = 8, TOP = 20;
+  const cols = Math.min(n, PER), rows = Math.ceil(n / PER);
+  const width = cols * W + (cols - 1) * GAP + PAD * 2, height = TOP + rows * H + (rows - 1) * ROWGAP + 20;
+  const pos = i => ({x: PAD + (i % PER) * (W + GAP), y: TOP + Math.floor(i / PER) * (H + ROWGAP)});
   const typeClass = t => 'k-' + (String(t || 'node').toLowerCase().match(/[a-z]+/) || ['node'])[0];
   let s = '<svg class="gtm-path-svg" viewBox="0 0 ' + width + ' ' + height + '" role="img" aria-label="' +
     gEsc(p.nodes.map(x => x.label).join(' to ')) + '"><defs><marker id="gtm-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 10 5 0 10z"/></marker></defs>';
   p.nodes.forEach((node, i) => {
-    const x = PAD + i * (W + GAP), y = 20;
+    const {x, y} = pos(i);
     if (i < n - 1) {
       const e = p.edges[i] || {type: ''};
-      const x1 = x + W, x2 = x + W + GAP;
-      s += '<line class="gtm-edge" x1="' + (x1 + 4) + '" y1="' + (y + H / 2) + '" x2="' + (x2 - 4) + '" y2="' + (y + H / 2) + '" ' +
-        (e.reverse ? 'marker-start' : 'marker-end') + '="url(#gtm-arrow)"/>' +
-        '<text class="gtm-edge-label" x="' + (x1 + GAP / 2) + '" y="' + (y + H / 2 - 9) + '" text-anchor="middle">' + gEsc(String(e.type).replace(/_/g, ' ')) + '</text>';
+      const word = gEsc(String(e.type).replace(/_/g, ' '));
+      const mark = (e.reverse ? 'marker-start' : 'marker-end') + '="url(#gtm-arrow)"';
+      const nx = pos(i + 1);
+      if (nx.y === y) {
+        const x1 = x + W, x2 = nx.x;
+        s += '<line class="gtm-edge" x1="' + (x1 + 4) + '" y1="' + (y + H / 2) + '" x2="' + (x2 - 4) + '" y2="' + (y + H / 2) + '" ' + mark + '/>' +
+          '<text class="gtm-edge-label" x="' + ((x1 + x2) / 2) + '" y="' + (y + H / 2 - 9) + '" text-anchor="middle">' + word + '</text>';
+      } else {
+        const sx = x + W / 2, sy = y + H + 4, mid = y + H + ROWGAP / 2, ex = nx.x + W / 2, ey = nx.y - 4;
+        s += '<path class="gtm-edge" fill="none" d="M' + sx + ' ' + sy + ' V' + mid + ' H' + ex + ' V' + ey + '" ' + mark + '/>' +
+          '<text class="gtm-edge-label" x="' + ((sx + ex) / 2) + '" y="' + (mid - 8) + '" text-anchor="middle">' + word + '</text>';
+      }
     }
     const label = String(node.label || ''), sub = String(node.sub || '');
     s += '<g class="gtm-node ' + typeClass(node.type) + '"><rect x="' + x + '" y="' + y + '" width="' + W + '" height="' + H + '" rx="10"/>' +
@@ -829,7 +895,10 @@ function gDraftCard(d, ix) {
     '<button class="btn btn-ghost btn-sm" type="button" data-act="reject-cancel">Cancel</button>';
   else if (d.status === 'pending') actions = '<button class="btn btn-primary btn-sm" type="button" data-act="approve" data-v="' + gEsc(d.id) + '">' + gIcon('i-check') + 'Approve</button>' +
     '<button class="btn btn-secondary btn-sm" type="button" data-act="edit" data-v="' + gEsc(d.id) + '">' + gIcon('i-pen') + 'Edit</button>' +
-    '<button class="btn btn-danger btn-sm" type="button" data-act="reject" data-v="' + gEsc(d.id) + '">' + gIcon('i-close') + 'Reject</button>';
+    '<button class="btn btn-danger btn-sm" type="button" data-act="reject" data-v="' + gEsc(d.id) + '">' + gIcon('i-close') + 'Reject</button>' +
+    (gIsLocal() ? '' : gAwaitingRep(d.id)
+      ? '<span class="badge t-waiting gtm-band-wait">Agents passed it: your approval is asked in BAND too</span>'
+      : '<button class="btn btn-ghost btn-sm" type="button" data-act="review" data-v="' + gEsc(d.id) + '" title="Planner, builder, reviewer and security check every claim in a BAND room">' + gIcon('i-conversations') + 'Agent review</button>');
   else if (d.status === 'approved') actions = '<span class="muted">' + gIcon('i-check') + 'Approved. It goes to the test inbox only, never to the prospect.</span>';
   else if (d.status === 'rejected') actions = '<span class="muted">Rejected. It cannot be sent.</span>';
   return '<article class="card gtm-draft s-' + gEsc(d.status) + '" id="draft-' + gEsc(d.id) + '">' +
@@ -942,15 +1011,20 @@ function gThinking(run) {
   const items = [];
   (run.audit || []).forEach(e => items.push({t: new Date(e.at).getTime(), who: e.agent || e.actor, what: e.action,
     detail: [e.target, e.detail].filter(Boolean).join(': '), tokens: e.tokens || 0, cost: e.cost_usd || 0, rep: e.actor === 'rep'}));
-  const msgs = gtm.feed && (Array.isArray(gtm.feed) ? gtm.feed : gtm.feed.messages) || [];
-  msgs.forEach(m => {
+  // BAND room messages (lane B) carry the words the agents said. Lane B also
+  // writes each one to the run's audit log, so the running cost comes from the
+  // audit log only and a message's own tokens are shown beside it, not added.
+  const msgs = gtm.feed && (Array.isArray(gtm.feed) ? gtm.feed : gtm.feed.items || gtm.feed.messages) || [];
+  msgs.filter(m => !m.run_id || m.run_id === run.id).forEach(m => {
     const t = typeof m.t === 'number' ? m.t * (m.t < 1e12 ? 1000 : 1) : new Date(m.at || m.t || m.inserted_at).getTime();
-    items.push({t: isNaN(t) ? 0 : t, who: m.sender || m.agent || 'band', what: (m.mentions && m.mentions.length ? '@' + m.mentions.join(' @') : 'message'),
-      detail: m.text || m.content || '', tokens: m.tokens || 0, cost: m.cost_usd || 0, band: true});
+    const to = m.to || m.mentions || [];
+    items.push({t: isNaN(t) ? 0 : t, who: m.sender || m.agent || 'band',
+      what: (m.kind && m.kind !== 'message' ? m.kind.replace(/_/g, ' ') + ' ' : '') + (to.length ? '@' + to.join(' @') : '') + (m.draft_id ? ' on ' + m.draft_id : ''),
+      detail: m.text || m.content || '', tokens: 0, cost: 0, ownTokens: m.tokens || 0, band: true});
   });
   items.sort((a, b) => a.t - b.t);
   let cum = 0, tok = 0;
-  items.forEach(it => { cum += it.cost; tok += it.tokens; it.cum = cum; });
+  items.forEach(it => { cum += it.cost; tok += it.tokens; it.cum = cum; if (it.band) it.tokens = it.ownTokens; });
   const rows = items.slice().reverse().slice(0, 80).map(it => '<li class="' + (it.rep ? 'rep' : it.band ? 'band' : '') + '">' +
     '<div class="gtm-feed-meta"><b>' + gEsc(it.who) + '</b>' + (it.band ? ' <span class="tag">BAND</span>' : '') +
     '<span>' + (it.t ? gEsc(gTime(it.t)) : '') + '</span>' +

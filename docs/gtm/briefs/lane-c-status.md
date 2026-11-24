@@ -2,15 +2,8 @@
 
 ## Requests to the owner / other lanes
 - **Owner, `pyproject.toml`:** add `"web/gtm/*"` to `[tool.setuptools.package-data] sellbird`. Editable installs work today; a built wheel would drop the GTM tab.
-- **Owner / lane A, route order:** `gtm/plugin.py` mounts `gtm.fixture_routes` last, so lane A's `GET /api/gtm/runs/{id}` will catch `fixture` first and 404 the fixture. Either mount `fixture_routes` first or have lane A's `{id}` route return the fixture for `id == "fixture"`.
-- **Lane A, POST bodies the UI sends** (match these, or tell me yours):
-  - `POST /api/gtm/runs` body = `Intake` JSON; reads `id` (or `run_id`) from the reply.
-  - `POST /api/gtm/runs/{id}/drafts/{draft_id}` `{"action": "approve"|"reject"|"edit", "body"?: str, "note"?: str}`
-  - `POST /api/gtm/runs/{id}/expansions/{i}` `{"status": "accepted"|"adjusted"|"dismissed", "note": str}`
-  - `POST /api/gtm/runs/{id}/leads/{company_id}` `{"stage": <Stage>}`
-  - Nice to have: `GET /api/gtm/runs` → list of `{id, intake.product}` for the run picker (falls back to runs started from this browser).
-  - Errors: a JSON `{"detail"|"message": "..."}` is shown to the user as is.
-- **Lane B:** `/paths/{kind}` with `kind` in `warm_intro | buying_cycle | displacement`; UI reads `{nodes:[{id,label|name,type}], edges:[{source,target,type}]}` (or a list of those). `/band/feed` → `{messages:[{sender,text,mentions,tokens,cost_usd,t|at}]}` or a bare list.
+- Resolved: lane A's `{id}` route already serves `fixture`; lane A's POST bodies and lane B's `/paths` and `/band/feed` shapes are what the UI now sends and reads (checked against `origin/lane-a` 487463a and `origin/lane-b` 6574896).
+- Nice to have from lane A: product names in `GET /api/gtm/runs` (today `{"ids": [...]}`), so the picker can say "PromptQL (run_…)" instead of the id.
 
 ## What works (fixture, in Chromium)
 - GTM engine tab in the sidebar (Pipeline group). Files: `sellbird/web/gtm/gtm.{js,css}`; hook = 4 lines in `index.html`, 1 in `app.js`.
@@ -19,19 +12,22 @@
 - ICP: every field with a 0.00–1.00 confidence badge (number + colour) and its why; expansion segments with evidence links, accept / adjust (inline note) / dismiss.
 - Leads: dense sheet, tier, fit and intent 0–100, signals (negative in red) each with a citation, source link under every company, rejected company stays with its reason. Filters All / A / B / C / Rejected. Contacts sheet: email status badge (verified, catch-all, risky, guess, invalid, unknown), MX, confidence, LinkedIn, source; emails masked by default on real runs (toggle).
 - Competitors: direct / indirect / alternative columns, pricing tiers, differentiators, sources.
-- Graph: SVG path from lane B's `/paths/{kind}`; falls back to computing warm intro and buying cycle in the browser. Fixture shows p_3 → Globex Pay → p_1. Mobile shows a step list.
-- Drafts (HITL): approve / edit (stays waiting) / reject with a reason; the cited signal and its quote beside the copy; review notes on rejected drafts; rejected drafts have no approve button. Approve is the only send path (test inbox only, stated in the UI).
+- Graph: SVG path from lane B's `/paths/{kind}` (warm intro, buying cycle, competitor displacement), three nodes a row with an elbow for longer paths, pager when there are several, each node's source linked; falls back to a browser walk when the API is missing (fixture: p_3 → Globex Pay → p_1). Mobile shows a step list.
+- Drafts (HITL): approve / edit (stays waiting) / reject with a reason; the cited signal and its quote beside the copy; review notes on rejected drafts; rejected drafts have no approve button. Approve is the only send path (test inbox only, stated in the UI). On real runs an "Agent review" button starts lane B's BAND review; a draft the agents passed shows "your approval is asked in BAND too".
+- Run status (`Run.status`): Running / Run done / Run failed badge; polls every 3 s while running, 12 s after.
+- ICP adjust sends the reworded segment (lane A's `segment` field).
 - Pipeline: Kanban Matched → Contacted → Replied → Meeting → Closed (won/lost) with a stage select per card; AI vs rep attribution; conversion by tier; A/B variant stats; audit log with timestamps, filter by actor.
 - Agent thinking: collapsible feed (state remembered) from the audit log + BAND feed, tokens and cumulative cost per entry.
 - Fixture actions apply in this tab only and say so; every rep action adds a rep audit event.
 
 ## Verification
-- `python -m pytest -q gtm/tests` → 9 passed (incl. `gtm/tests/web/test_gtm_web.py` at 1440 and 390 px: clicks every control, fails on console/page errors).
+- `python -m pytest -q gtm/tests` on lane-c → 9 passed (incl. `gtm/tests/web/test_gtm_web.py` at 1440 and 390 px: clicks every control, fails on console/page errors).
 - `gtm/tests/web/test_gtm_web_live.py`: live-run path against an in-memory stand-in for lane A's routes. Intake → run starts and the picker switches; companies added server-side appear by polling within one tick; emails masked on real runs; approve posts `{"action":"approve"}`; a server refusal (409) shows as an error toast; stage move posts `{"stage":...}`.
 - Core web tests (dashboard, packaging, signals…): 602 passed, 1 skipped.
 - Chromium: the lane's Chromium lacked system libs; the test links the .deb libs in `~/chromelibs` by soname in a temp dir. No browser downloaded.
 - Screenshots (looked at, fixed what they showed): `data/gtm/shots/{intake,icp,leads,competitors,graph,drafts,pipeline}-{1440,390}.png`.
-- Not yet run on real PromptQL data: lane A's routes are not on any branch yet (checked `origin`).
+- **Integrated with lanes A and B** (no merge pushed): `/tmp/gtm_integrate.py` assembles lane B's `gtm/` + lane A's `pipeline/` + these web tests and runs `gtm/tests` → 49 passed, 3 skipped. The browser check there hits lane B's real `/paths` (kuzu or python engine): warm intro shows both paths (p_2 and p_3 to p_1 via Globex Pay, then the product), with node sources and a path pager.
+- Not yet run on real PromptQL data: lane A has no run yet (blocked on the model login, see lane-a-status).
 
 ## Design skills (all six present in `~/.claude/skills`)
 - impeccable: Operate mode, so restraint and familiar patterns; no modals (edit, reject reason and adjust are inline); theme selection colour; empty, loading (skeleton) and error states.

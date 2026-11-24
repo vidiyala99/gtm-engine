@@ -153,9 +153,11 @@ def test_fixture_views(server, width, height):
         assert page.locator("#gtm .gtm-conf").count() >= 8
         assert page.locator("#gtm .gtm-evidence a.gtm-cite").count() >= 1
         page.click("#gtm button[data-act='exp-adjust']")
-        page.fill("#gtm-adjust-0", "hospital networks over 1,000 staff")
+        assert page.locator("#gtm-adjust-0").input_value() == "Healthcare ops analytics"
+        page.fill("#gtm-adjust-0", "Hospital network analytics")
         page.click("#gtm button[data-act='exp-adjust-save']")
-        assert "Adjusted" in page.locator("#gtm .gtm-exp").first.inner_text()
+        exp = page.locator("#gtm .gtm-exp").first.inner_text()
+        assert "Adjusted" in exp and "Hospital network analytics" in exp
         page.click("#gtm button[data-act='exp'][data-v='accepted']")
         assert "Accepted" in page.locator("#gtm .gtm-exp").first.inner_text()
         _shot(page, f"icp-{tag}")
@@ -180,13 +182,18 @@ def test_fixture_views(server, width, height):
         _view(page, "graph")
         page.wait_for_selector("#gtm-path", state="attached")
         steps = page.locator("#gtm .gtm-path-steps").inner_text()
-        # p_3 (Riley) to p_1 (Dana, contacted) via their shared past employer
-        assert steps.index("Riley Example") < steps.index("Globex Pay") < steps.index("Dana Example")
+        # A target at Globex Pay to Dana (already contacted) through Globex Pay: lane B's
+        # graph when it is mounted, else the browser's own walk (p_3 to p_1).
+        assert steps.index("Globex Pay") < steps.index("Dana Example")
+        assert steps.split("\n")[0].split()[0] in ("Riley", "Sam")
+        while page.locator("#gtm button[data-act='path-step'][data-v='1']:not([disabled])").count():
+            page.click("#gtm button[data-act='path-step'][data-v='1']")  # page through every path
+            page.wait_for_selector("#gtm-path", state="attached")
         _shot(page, f"graph-{tag}")
         page.click("#gtm button[data-act='path'][data-v='buying_cycle']")
         page.wait_for_selector("#gtm-path", state="attached")
         assert "Acme Freight" in page.locator("#gtm .gtm-path-steps").inner_text()
-        page.click("#gtm button[data-act='path'][data-v='displacement']")
+        page.click("#gtm button[data-act='path'][data-v='competitor_displacement']")
         page.wait_for_selector("#gtm .gtm-graph-card .empty")
 
         # Drafts: the cited signal sits beside the copy; edit keeps it waiting; approve and reject work.
@@ -216,6 +223,7 @@ def test_fixture_views(server, width, height):
         assert page.locator("#gtm .gtm-audit tbody tr").count() >= 6
         page.click("#gtm button[data-act='audit-actor'][data-v='rep']")
         assert "draft.approve" in page.locator("#gtm .gtm-audit").inner_text()
+        assert "expansion_adjusted" in page.locator("#gtm .gtm-audit").inner_text()
         page.click("#gtm button[data-act='audit-actor'][data-v='all']")
         _shot(page, f"pipeline-{tag}")
 

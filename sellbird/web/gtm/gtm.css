@@ -160,6 +160,9 @@
 #gtm .gtm-path figcaption .muted { font-size: var(--fs-caption); }
 #gtm .gtm-path-steps { display: none; list-style: none; margin-top: var(--sp-3); gap: 6px; flex-direction: column; font-size: var(--fs-ui); }
 #gtm .gtm-edge-word { color: var(--accent); font-size: var(--fs-caption); }
+#gtm .gtm-pager { display: flex; align-items: center; gap: var(--sp-2); justify-content: flex-end; margin-bottom: var(--sp-3); font-size: var(--fs-caption); }
+#gtm .gtm-pager .muted { margin-right: auto; }
+#gtm .gtm-path-sources { display: flex; flex-wrap: wrap; align-items: center; gap: 4px var(--sp-3); margin-top: var(--sp-3); padding-top: var(--sp-3); border-top: 1px solid var(--line); }
 #gtm .gtm-path-steps li + li { padding-left: 14px; border-left: 1px solid var(--accent-line); margin-left: 6px; }
 @media (max-width: 760px) {
   #gtm .gtm-path { display: none; }

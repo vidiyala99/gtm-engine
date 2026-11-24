@@ -29,7 +29,7 @@ def _stub_router(state):
     @r.post("/api/gtm/runs")
     async def start(intake: dict = Body(...)):
         run = load_fixture().model_dump(mode="json")
-        run.update(id=RUN_ID, intake={**run["intake"], **intake}, companies=run["companies"][:1])
+        run.update(id=RUN_ID, status="running", intake={**run["intake"], **intake}, companies=run["companies"][:1])
         state["run"], state["posts"] = run, []
         return {"id": RUN_ID}
 
@@ -111,7 +111,9 @@ def test_live_run_fills_and_posts(live_server):
         assert page.locator("#gtm .gtm-leads tbody tr").count() == 1
         state["run"]["companies"] = copy.deepcopy(load_fixture().model_dump(mode="json")["companies"])
         page.wait_for_function("() => document.querySelectorAll('#gtm .gtm-leads tbody tr').length === 4", timeout=8000)
-        assert "Live" in page.locator("#gtm-live").inner_text()
+        assert "Running" in page.locator("#gtm-live").inner_text()
+        state["run"]["status"] = "done"
+        page.wait_for_function("() => document.getElementById('gtm-live').innerText.includes('Run done')", timeout=8000)
 
         # Real-run emails are masked until the rep asks to see them.
         assert "d•••@acmefreight.example.com" in page.locator("#gtm .gtm-email").first.inner_text()
@@ -128,7 +130,7 @@ def test_live_run_fills_and_posts(live_server):
         # A refusal from the server is shown, not swallowed.
         state["run"]["drafts"][0]["status"] = "rejected"
         state["run"]["drafts"].append({**state["run"]["drafts"][0], "id": "d_9", "status": "pending"})
-        page.wait_for_selector("#gtm #draft-d_9", timeout=8000)
+        page.wait_for_selector("#gtm #draft-d_9", timeout=15000)  # a done run polls every 12 s
         state["run"]["drafts"][-1]["status"] = "rejected"  # changed under the rep's feet
         page.click("#gtm #draft-d_9 button[data-act='approve']")
         page.wait_for_selector(".toast.error", timeout=5000)
