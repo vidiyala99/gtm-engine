@@ -1,0 +1,18 @@
+{
+  "product": "PromptQL",
+  "description": "PromptQL (by Hasura) is an AI data agent for enterprises. Business and data users ask questions in plain English; PromptQL writes an explicit query plan over the company's databases, warehouses and APIs, runs it deterministically, and shows every step, so answers are accurate and auditable instead of LLM guesses.",
+  "features": [
+    "natural-language questions over Postgres, Snowflake, BigQuery, Databricks and SaaS APIs",
+    "explicit, reviewable query plans instead of free-form SQL generation",
+    "row- and column-level access control inherited from Hasura's data layer",
+    "semantic layer that learns company definitions and metrics"
+  ],
+  "constraints": [
+    "sold to companies with a real data stack (a warehouse and a data team)",
+    "enterprise sales motion; North America and Europe first"
+  ],
+  "customers": [
+    "data and analytics teams already using Hasura for their GraphQL data layer"
+  ],
+  "pricing": "enterprise contracts, priced per deployment; contact sales"
+}
