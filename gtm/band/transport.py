@@ -1,12 +1,12 @@
 """BAND transport: the only place that talks to band.ai.
 
-HEEL_BAND_MODE=mock (default): in-process rooms with BAND's delivery rules.
-HEEL_BAND_MODE=live: band-sdk REST client (band_rest), one client per agent key.
+GTM_BAND_MODE=mock (default): in-process rooms with BAND's delivery rules.
+GTM_BAND_MODE=live: band-sdk REST client (band_rest), one client per agent key.
 
 Delivery rules the mock enforces (from band.ai/hacker-guide "Mentions"):
 - only participants of a room see anything in it (private locker rooms);
 - an AGENT receives a message only if it is @mentioned (or sent it);
-- a HUMAN participant (the commissioner) sees every message in rooms they are in.
+- a HUMAN participant (the rep) sees every message in rooms they are in.
 Every call is appended to `console` so the demo can print a BAND console.
 """
 from __future__ import annotations
@@ -21,7 +21,7 @@ from datetime import datetime
 from pathlib import Path
 
 ROOM_LIMIT = 250  # BAND max_chat_rooms per account (403 limit_reached at 250/250)
-POOL_FILE = Path(__file__).parent / ".band_rooms.json"
+POOL_FILE = Path(__file__).resolve().parents[2] / "data" / "gtm" / "band" / "rooms.json"  # gitignored
 
 
 class BandRoomLimit(RuntimeError):
@@ -123,16 +123,16 @@ class MockBand:
         return out
 
     def verdicts(self, room: str, judge: str, proposer: str) -> list[Message]:
-        """Messages the judge (commissioner) addressed to the proposer in `room`."""
+        """Messages the judge (the rep) addressed to the proposer in `room`."""
         return [m for m in self.messages if m.room == room and m.sender == judge and proposer in m.mentions]
 
 
 class LiveBand:
     """band.ai via band_rest (installed with `pip install band-sdk`).
 
-    Env per participant id X (upper-cased): HEEL_BAND_X_ID, HEEL_BAND_X_KEY (agents), HEEL_BAND_X_HANDLE (optional,
-    else looked up via /peers). Commissioner: HEEL_BAND_COMMISSIONER_ID and HEEL_BAND_COMMISSIONER_HANDLE (a human user).
-    The commissioner's approve/block is typed by the human in the Band app, mentioning the proposer.
+    Env per participant id X (upper-cased): GTM_BAND_X_ID, GTM_BAND_X_KEY (agents), GTM_BAND_X_HANDLE (optional,
+    else looked up via /peers). Rep: GTM_BAND_REP_HANDLE and optionally GTM_BAND_REP_ID (a human user).
+    The rep's approve/reject is typed by the human in the Band app, mentioning the proposer.
     """
 
     mode = "live"
@@ -145,9 +145,9 @@ class LiveBand:
         self.rooms: dict[str, dict] = {}
         self._clients: dict[str, object] = {}
         self.ids = {p: _env(p, "ID") for p in cast}
-        self.handles = {p: os.environ.get(f"HEEL_BAND_{p.upper()}_HANDLE") for p in cast}
-        missing = [f"HEEL_BAND_{p.upper()}_{s}" for p, k in cast.items() for s in (("ID", "KEY") if k == "agent" else ("ID",))
-                   if not os.environ.get(f"HEEL_BAND_{p.upper()}_{s}")]
+        self.handles = {p: os.environ.get(f"GTM_BAND_{p.upper()}_HANDLE") for p in cast}
+        missing = [f"GTM_BAND_{p.upper()}_{s}" for p, k in cast.items() for s in (("ID", "KEY") if k == "agent" else ("ID",))
+                   if not os.environ.get(f"GTM_BAND_{p.upper()}_{s}")]
         if missing:
             raise RuntimeError("live BAND needs env: " + ", ".join(missing))
 
@@ -247,7 +247,7 @@ class LiveBand:
         raise NotImplementedError("live inbox: open the Band app console")
 
     def verdicts(self, room: str, judge: str, proposer: str) -> list[Message]:
-        """Read the proposer's room messages and keep the ones the commissioner sent."""
+        """Read the proposer's room messages and keep the ones the rep sent."""
         resp = self._client(proposer).agent_api_messages.list_agent_messages(room, status="all", request_options=self._opts())
         data = getattr(resp, "data", None) or []
         judge_id = self.ids[judge]
@@ -261,7 +261,7 @@ class LiveBand:
 
 
 def _env(pid: str, suffix: str) -> str | None:
-    return os.environ.get(f"HEEL_BAND_{pid.upper()}_{suffix}")
+    return os.environ.get(f"GTM_BAND_{pid.upper()}_{suffix}")
 
 
 def _dig(resp, *path):
@@ -306,7 +306,7 @@ def _dig_id(resp) -> str:
     return ""
 
 
-VERDICT_RE = re.compile(r"\b(approve|approved|block|blocked|veto)\b", re.I)
+VERDICT_RE = re.compile(r"\b(approve|approved|block|blocked|veto|reject|rejected)\b", re.I)
 
 
 def parse_verdict(text: str) -> str | None:
@@ -317,10 +317,10 @@ def parse_verdict(text: str) -> str | None:
 
 
 class RoomPool:
-    """A fixed set of BAND rooms, one per purpose, created once and reused by every match.
+    """A fixed set of BAND rooms, one per purpose, created once and reused by every review.
 
-    Matches are told apart by a [match] tag in message text, not by new rooms, so playing never walks the account
-    into the 250-room cap. Live mode persists {purpose: {id, owner, title}} in agents/.band_rooms.json (gitignored).
+    Reviews are told apart by a [run/draft] tag in message text, not by new rooms, so reviewing never walks the account
+    into the 250-room cap. Live mode persists {purpose: {id, owner, title}} in data/gtm/band/rooms.json (gitignored).
     """
 
     def __init__(self, band, path: Path | None):
@@ -338,14 +338,15 @@ class RoomPool:
 
     def get(self, purpose: str, owner: str) -> str:
         if purpose not in self.rooms:
-            title = f"HEEL TURN {purpose}"
+            title = f"GTM Engine {purpose}"
             self.rooms[purpose] = {"id": self.band.create_room(owner, title), "owner": owner, "title": title}
             if self.path:
+                self.path.parent.mkdir(parents=True, exist_ok=True)
                 self.path.write_text(json.dumps(self.rooms, indent=2))
         return self.rooms[purpose]["id"]
 
     def reset(self, baseline: dict[str, set[str]]) -> None:
-        """Between matches: remove everyone the last match added, so the next entrants are real adds again."""
+        """Between reviews: remove everyone the last review added, so the next adds are real adds again."""
         for purpose, r in self.rooms.items():
             keep = baseline.get(purpose, set()) | {r["owner"]}
             for m in self.band.participants(r["id"]):
@@ -358,5 +359,5 @@ def make_pool(band) -> RoomPool:
 
 
 def make_transport(cast: dict[str, str]):
-    mode = os.environ.get("HEEL_BAND_MODE", "mock").lower()
+    mode = os.environ.get("GTM_BAND_MODE", "mock").lower()
     return LiveBand(cast) if mode == "live" else MockBand(cast)
