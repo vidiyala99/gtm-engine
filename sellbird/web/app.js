@@ -427,6 +427,7 @@ function loadCurrentTab() {
     case 'settings': loadSettings(); loadSendingModeCard(); break;
     case 'company': loadCompany(); break;
     case 'controls': loadSellbirdStatus(); loadLogs(); break;
+    case 'gtm': loadGtm(); break;
   }
 }
 
