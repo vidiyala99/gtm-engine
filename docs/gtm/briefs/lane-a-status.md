@@ -21,4 +21,4 @@
 - Step 3 ICP with real expansion evidence.
 
 ## Blocks
-- none
+- **Model calls:** the `claude` CLI on this lane says "Not logged in" (no `~/.claude` credentials, no `CLAUDE_CODE_OAUTH_TOKEN`). Sellbird's Brain therefore returns nothing. Fix on the lane: `claude login`, or `claude setup-token` and export `CLAUDE_CODE_OAUTH_TOKEN`. Smoke test: `.venv/bin/python -c "from gtm.pipeline import llm; print(llm.ask_json('Return {\"ok\": true}', agent='t', task='t'))"`.
