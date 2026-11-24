@@ -35,6 +35,13 @@ def reset_fixture(draft_ids: list[str]) -> list[str]:
                 d.status, d.review_notes = "pending", []
 
     run = update_run("fixture", change)
+    from gtm.band.room import STATE_DIR
+    state_file = STATE_DIR / "state.json"
+    if state_file.exists():  # forget any approval request still open for these drafts
+        st = json.loads(state_file.read_text(encoding="utf-8"))
+        drop = {f"fixture/{d}" for d in draft_ids}
+        st["awaiting"] = {k: v for k, v in st.get("awaiting", {}).items() if k not in drop}
+        state_file.write_text(json.dumps(st))
     return [f"{d.id}={d.status}" for d in run.drafts]
 
 

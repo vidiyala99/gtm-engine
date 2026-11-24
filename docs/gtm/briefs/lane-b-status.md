@@ -18,7 +18,13 @@
 ### Step 3: path alias: done
 - `/paths/displacement` serves `competitor_displacement` (same body, `kind` is the canonical name). Test: `test_displacement_alias_serves_competitor_displacement` (both engines).
 
-### Step 2: live BAND: next
+### Step 2: live BAND: done, waiting on the rep
+- `cli --mode live smoke`: pooled room `318911c9-f605-463a-b626-71ecf02cdf74` ("GTM Engine review"), cast planner, builder, reviewer, security + rep (owner); hello posted to @rep.
+- `cli --mode live review fixture d_1` → `awaiting_rep`, real model decisions posted in BAND: #11 planner→@builder tok=2601 · #12 builder→@reviewer tok=2885 · #13 reviewer→@security PASS ("the only claim, three openings, is supported by sig_1") tok=2966 · #14 security→@rep,planner approval request tok=2379. 10,831 tokens, $0.0198.
+- `cli --mode live wait fixture d_1 115` → "still waiting" (no reply within 2 minutes). The request stays open in `data/gtm/band/state.json`.
+- **Owner:** in the Band app, reply in that room to the planner with `@planner approve d_1` (or `reject d_1`), then run `.venv/bin/python -m gtm.band.cli --mode live wait fixture d_1 60`. It sets d_1's status and the planner acknowledges.
+- Re-run from scratch: `.venv/bin/python -m gtm.band.cli reset d_1` (fixture status back to pending, open request dropped).
+- Push: `git push` needs an approval this session doesn't have; commits are on local `lane-b`.
 
 ## Graph (`gtm/graph/`): done
 - Engine: **kuzu 0.11.3** (21 MB wheel, embedded, works on the lane). Plain-Python traversal behind the same `paths()` is the fallback; tests hold both engines to identical output.
