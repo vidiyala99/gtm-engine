@@ -157,6 +157,7 @@ class AuditEvent(BaseModel):
 class Run(BaseModel):
     id: str
     created_at: datetime
+    status: Literal["running", "done", "failed"] = "running"
     intake: Intake
     icp: ICP | None = None
     companies: list[Company] = []
