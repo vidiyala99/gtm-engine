@@ -6,8 +6,7 @@
 | 2026-11-23 23:35 | No code before kickoff, only research and setup | Claude | Pre-built code may break the event rules |
 | 2026-11-23 23:37 | Fork Sellbird (formerly Harvey); don't rebuild | owner | "Don't reinvent the wheel" |
 | 2026-11-23 23:37 | Don't use Actintro as the demo product | owner | |
-| 2026-11-23 23:40 | Demo product is PromptQL (Hasura) | owner | Owner wants a reply from Rajoshi |
-| 2026-11-23 23:41 | The email to Rajoshi goes through Shipyard (checks + "ship it"); the engine never sends it; it leads with useful output | Claude (owner invited corrections) | Shipyard hard rules; a bot-on-your-product email reads as spam |
+| 2026-11-23 23:40 | Demo product is PromptQL (Hasura) | owner | A real B2B data/AI product |
 | 2026-11-23 23:41 | Real prospects' emails and LinkedIn URLs are masked in the public repo and video; demo sends go only to a test inbox | Claude | AGPL repo is public; privacy |
 | 2026-11-23 23:45 | Extend Sellbird's no-build dashboard rather than Next.js | Claude | It already has the Outbox approval desk |
 | 2026-11-23 23:55 | HumanLayer not adopted; lint repos used for ideas only (JS side); spec rules encoded as Python checks | Claude | Too heavy for the day; Sellbird is Python |

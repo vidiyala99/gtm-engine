@@ -44,7 +44,7 @@ One live run, recorded, with no edits:
 - **Model runtime:** it thinks through the Claude Code CLI on your Claude plan, or Codex on a ChatGPT plan, so no API key is needed. Check it runs on Windows (or in its Docker image) first thing.
 
 ## Edge we already own
-- **The Shipyard factory already is a GTM loop:**
+- **The owner's existing outreach workflow already is a GTM loop:**
   - scout → enrich → evidence with receipts → draft → checks → human "ship it" gate → status pipeline
   - the patterns for "claims follow receipts" and the HITL gate are proven there
 - **BAND:** working code from HEEL TURN to reuse as a pattern: band-sdk, the room pool (250-room limit) and the commissioner approve/block flow.
@@ -81,7 +81,6 @@ One live run, recorded, with no edits:
 - **Keys:** OpenAI, Tavily or Exa, Hunter, Apollo, Flexprice, BAND, Neo4j Aura, SendGrid or Gmail.
 - **From the organizers:** the deadline, whether pre-built code is allowed, and whether the demo must be deployed.
 - **Demo product: PromptQL (Hasura),** chosen by the owner at 23:40. Not Actintro. A real B2B data/AI product makes the viability score credible.
-  - The follow-up email to Rajoshi goes through Shipyard (`companies/promptql`, checks PASS, owner's "ship it"). The engine never sends it.
   - The email leads with the useful output (cited accounts showing buying signals, plus the competitor map), not "I ran a bot on you".
   - In the public repo and video, emails and personal LinkedIn URLs of real prospects are masked. Only companies, titles and public sources are shown.
   - The demo's approved sends go only to our own test inbox.
