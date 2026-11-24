@@ -37,6 +37,7 @@ const gtm = {
   draftFilter: 'pending',
   auditActor: 'all',
   pathKind: 'warm_intro',
+  pathPicked: false,   // the rep chose a path kind; until then the graph opens on one that has a path
   path: null,          // {kind, source: 'api'|'local', nodes, edges}
   feed: null,          // band feed, when lane B serves it
   runs: [],
@@ -180,6 +181,9 @@ async function gLoadRun() {
   if (gIsLocal() && gtm.run && gtm.run.id === GTM_FIXTURE) return;
   gtm.run = data;
   gtm.updatedAt = new Date();
+  // GET /api/gtm/runs lists bare ids: once a run loads, the picker names its product.
+  const pick = gtm.runs.find(r => r.id === data.id);
+  if (pick && pick.label === pick.id && data.intake.product) pick.label = data.intake.product + ' (' + data.id + ')';
   await gLoadFeed();
 }
 
@@ -245,6 +249,8 @@ async function gSwitchRun(id) {
   gtm.runId = id;
   gtm.run = null;
   gtm.path = null;
+  gtm.pathKind = 'warm_intro';
+  gtm.pathPicked = false;
   sessionStorage.setItem('gtm-run', id);
   gRender();
   await gLoadRun();
@@ -396,7 +402,7 @@ function gBind(root) {
     else if (a === 'draft-filter') { gtm.draftFilter = v; gRender(); }
     else if (a === 'audit-actor') { gtm.auditActor = v; gRender(); }
     else if (a === 'mask') { gtm.maskEmails = !gtm.maskEmails; gRender(); }
-    else if (a === 'path') { gtm.pathKind = v; gtm.path = null; gRender(); }
+    else if (a === 'path') { gtm.pathKind = v; gtm.pathPicked = true; gtm.path = null; gRender(); }
     else if (a === 'path-step' && gtm.path) {
       gtm.path.i = Math.max(0, Math.min(gtm.path.paths.length - 1, gtm.path.i + Number(v)));
       gRender();
@@ -740,19 +746,33 @@ function gGraph() {
     '<div class="card gtm-graph-card">' + body + '</div>';
 }
 
-async function gGraphLoad(run, ix) {
-  if (gtm.path && gtm.path.kind === gtm.pathKind) return;
-  const kind = gtm.pathKind;
-  let set = null;
+async function gPathSet(run, ix, kind) {
   const data = await api('/api/gtm/runs/' + encodeURIComponent(run.id) + '/paths/' + kind);
   if (data && !data.detail) {
     const list = Array.isArray(data) ? data : data.paths ? data.paths : [data.path && !Array.isArray(data.path) ? data.path : data];
     const paths = list.map(d => gNormalizePath(d, kind)).filter(Boolean);
-    set = {kind, source: 'api', engine: data.engine || '', paths, i: 0,
+    return {kind, source: 'api', engine: data.engine || '', paths, i: 0,
       note: paths.length ? '' : data.note || 'The knowledge graph found no path of this kind in this run.'};
   }
-  if (!set) { const lp = gLocalPath(run, ix, kind); set = {kind, source: 'local', paths: lp.nodes.length ? [lp] : [], i: 0, note: lp.note}; }
-  if (gtm.pathKind !== kind || gtm.view !== 'graph') return;
+  const lp = gLocalPath(run, ix, kind);
+  return {kind, source: 'local', paths: lp.nodes.length ? [lp] : [], i: 0, note: lp.note};
+}
+
+async function gGraphLoad(run, ix) {
+  if (gtm.path && gtm.path.kind === gtm.pathKind) return;
+  const kind = gtm.pathKind;
+  let set = await gPathSet(run, ix, kind);
+  // Until the rep picks a kind, open on the first kind that has a path, so a run
+  // with no warm intro still opens on a real path instead of an empty card.
+  if (!set.paths.length && !gtm.pathPicked) {
+    for (const [k] of GTM_PATHS) {
+      if (k === kind) continue;
+      const other = await gPathSet(run, ix, k);
+      if (other.paths.length) { set = other; break; }
+    }
+  }
+  if (gtm.pathKind !== kind || gtm.view !== 'graph' || gtm.pathPicked && set.kind !== kind) return;
+  gtm.pathKind = set.kind;
   gtm.path = set;
   gRender();
 }

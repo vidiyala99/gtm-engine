@@ -118,6 +118,10 @@ def _view(page, name):
 
 NO_HSCROLL_JS = """() => [...document.querySelectorAll('#gtm .table-card, #gtm .gtm-main, #gtm')]
   .filter(el => el.scrollWidth > el.clientWidth + 1)
+  .concat([...document.querySelectorAll('#gtm .segmented')].filter(el => {
+    const r = el.getBoundingClientRect(), box = document.querySelector('#gtm').getBoundingClientRect();
+    return el.scrollWidth > el.clientWidth + 1 || r.right > box.right + 1;
+  }))
   .map(el => (el.id || el.className) + ' ' + el.scrollWidth + '>' + el.clientWidth)
   .concat(document.documentElement.scrollWidth > innerWidth
     ? ['page: ' + [...document.querySelectorAll('#gtm *, body > *')].filter(el => el.getBoundingClientRect().right > innerWidth + 1)

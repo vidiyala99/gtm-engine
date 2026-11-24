@@ -88,7 +88,17 @@
 #gtm .gtm-profile { display: inline-block; margin-top: 3px; font-size: var(--fs-caption); color: var(--accent); }
 /* Long source URLs truncate inside their cell instead of widening the sheet. */
 #gtm td.gtm-src { max-width: 220px; }
-#gtm .gtm-leads td.gtm-wrap { min-width: 200px; }
+#gtm .gtm-leads td.gtm-wrap { min-width: 180px; }
+#gtm .gtm-leads td.gtm-co .cell-sub { white-space: normal; }
+/* Real runs carry long citation titles, chips and action names: they wrap
+   (anywhere, as a last resort) so no sheet or card grows past its column. */
+#gtm .gtm-sheet .gtm-cite { white-space: normal; align-items: flex-start; }
+#gtm .gtm-sheet .gtm-cite span { overflow-wrap: anywhere; }
+#gtm .gtm-sheet .gtm-cite .icon { flex: none; margin-top: 3px; }
+#gtm .gtm-sigs li { overflow-wrap: anywhere; }
+#gtm .gtm-tags .tag { white-space: normal; height: auto; min-height: 22px; max-width: 100%; line-height: 1.35; padding-block: 2px; overflow-wrap: anywhere; border-radius: var(--r-sm); }
+#gtm .gtm-audit .gtm-action { white-space: normal; overflow-wrap: anywhere; min-width: 96px; }
+#gtm .gtm-audit td.gtm-wrap { overflow-wrap: anywhere; min-width: 160px; }
 #gtm .gtm-sigs, #gtm .gtm-ppl { list-style: none; display: flex; flex-direction: column; gap: 3px; margin-top: 2px; }
 #gtm .gtm-sigs li { line-height: 1.4; }
 #gtm .gtm-sigs li.neg { color: var(--bad); }
@@ -286,6 +296,7 @@
   #gtm .gtm-select { flex: 1; min-width: 0; max-width: none; }
   #gtm .gtm-facts #gtm-live { margin-left: 0; }
   #gtm .gtm-tabs { width: 100%; flex-wrap: wrap; }
+  #gtm .toolbar .segmented, #gtm .subhead .segmented { flex-wrap: wrap; max-width: 100%; }
   #gtm .btn-sm { height: 36px; }
   #gtm .gtm-stage { height: 32px; }
 }
