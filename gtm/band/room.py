@@ -18,7 +18,7 @@ from gtm.band import agents
 from gtm.band.model import Model, Reply
 from gtm.band.transport import make_pool, make_transport, parse_verdict
 from gtm.contract import AuditEvent
-from gtm.graph.runs import load_run, save_run
+from gtm.graph.runs import load_run, update_run
 
 CAST = {"planner": "agent", "builder": "agent", "reviewer": "agent", "security": "agent", "rep": "human"}
 STATE_DIR = Path(__file__).resolve().parents[2] / "data" / "gtm" / "band"
@@ -135,18 +135,18 @@ class ReviewRoom:
 
     def _audit(self, run_id: str, draft_id: str, sender: str, action: str, text: str, item: FeedItem,
                target_status: str | None, note: str | None) -> None:
-        run = load_run(run_id)
-        run.audit.append(AuditEvent(at=_now(), actor="rep" if sender == "rep" else "ai", agent=sender,
-                                    action=action, target=draft_id, detail=text[:1000],
-                                    tokens=item.tokens, cost_usd=item.cost_usd))
-        if target_status or note:
+        def change(run) -> None:
+            run.audit.append(AuditEvent(at=_now(), actor="rep" if sender == "rep" else "ai", agent=sender,
+                                        action=action, target=draft_id, detail=text[:1000],
+                                        tokens=item.tokens, cost_usd=item.cost_usd))
             for d in run.drafts:
                 if d.id == draft_id:
                     if target_status:
                         d.status = target_status
                     if note:
                         d.review_notes.append(note)
-        save_run(run)
+
+        update_run(run_id, change)
 
     async def _think(self, agent: str, prompt: str) -> Reply:
         return await self.model(agent, prompt)

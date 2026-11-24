@@ -10,6 +10,8 @@ from __future__ import annotations
 import importlib
 import os
 import tempfile
+import threading
+from collections.abc import Callable
 from pathlib import Path
 
 from gtm.contract import Run
@@ -57,6 +59,25 @@ def load_run(run_id: str) -> Run:
     if run_id == "fixture":
         return load_fixture()
     raise RunNotFound(run_id)
+
+
+_overlay_lock = threading.RLock()
+
+
+def update_run(run_id: str, change: Callable[[Run], object]) -> Run:
+    """Load, change in place, save, under the store's per-run lock, so a BAND event
+    never overwrites a pipeline write made in between."""
+    store = _store()
+    if run_id != "fixture" and store is not None and callable(getattr(store, "update", None)):
+        try:
+            return store.update(run_id, change)
+        except (FileNotFoundError, KeyError) as e:
+            raise RunNotFound(run_id) from e
+    with _overlay_lock:
+        run = load_run(run_id)
+        change(run)
+        save_run(run)
+        return run
 
 
 def save_run(run: Run) -> None:

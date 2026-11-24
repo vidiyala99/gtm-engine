@@ -36,4 +36,8 @@
 - **Claude CLI on the lane is not logged in for headless calls**: `claude -p` returns "Not logged in · Please run /login" with or without Sellbird's isolation flags. No `~/.claude/.credentials.json`. Every BAND agent decision needs it. Owner: run `claude login` (or `claude setup-token` and put `CLAUDE_CODE_OAUTH_TOKEN` in the lane env). I did not work around auth.
 
 ## Tests
-- `python -m pytest -q gtm/tests`: 38 passed (graph 15, band 13, contract 6+).
+- `python -m pytest -q gtm/tests`: 39 passed on lane-b with main merged (Run.status).
+
+## Lane A integration
+- `gtm/graph/runs.py` reads with `gtm.pipeline.store.load` and writes BAND events with `store.update` (locked read-modify-write), matching lane A's store on `origin/lane-a`. Test holds it to that API with a stand-in module.
+- Not yet run on real PromptQL data: no saved run on this lane (`data/gtm/runs/` empty) and lane A is blocked on the same model login. When a run exists: `curl .../api/gtm/runs/<id>/paths/warm_intro` and `python -m gtm.band.cli review <id> <draft>`.

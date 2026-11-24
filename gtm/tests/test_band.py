@@ -203,6 +203,42 @@ def test_security_scan_allows_recipient_email_and_listed_domains(monkeypatch):
     assert agents.security_scan(lead) == ["link outside GTM_LINK_DOMAINS: evil.example.net"]
 
 
+def test_real_runs_go_through_lane_a_store_update(tmp_path, monkeypatch):
+    """A non-fixture run is read with store.load and every BAND write goes through store.update."""
+    import sys
+    import types
+
+    saved: dict[str, object] = {}
+    calls: list[str] = []
+
+    def load(run_id):
+        if run_id not in saved:
+            raise KeyError(run_id)
+        return saved[run_id].model_copy(deep=True)
+
+    def save(run):
+        saved[run.id] = run.model_copy(deep=True)
+
+    def update(run_id, change):
+        calls.append(run_id)
+        run = load(run_id)
+        change(run)
+        save(run)
+        return run
+
+    fake = types.SimpleNamespace(load=load, save=save, update=update)
+    monkeypatch.setitem(sys.modules, "gtm.pipeline.store", fake)
+    run = load_run("fixture").model_copy(update={"id": "r_real"})
+    save(run)
+
+    room = make_room(tmp_path, Scripted())
+    assert run_(room.review("r_real", "d_1")).state == "awaiting_rep"
+    run_(room.rep_says("r_real", "d_1", "approve d_1"))
+    assert next(d for d in saved["r_real"].drafts if d.id == "d_1").status == "approved"
+    assert len(calls) == 6  # 4 agents + rep + planner ack, each one locked update
+    assert not (tmp_path / "runs").exists()  # nothing written beside lane A's store
+
+
 def test_routes_run_review_feed_and_rep(tmp_path):
     routes.set_room(make_room(tmp_path, Scripted()))
     app = FastAPI()
