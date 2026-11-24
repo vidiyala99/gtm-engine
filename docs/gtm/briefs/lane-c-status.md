@@ -2,6 +2,7 @@
 
 ## Requests to the owner / other lanes
 - **Owner, `pyproject.toml`:** add `"web/gtm/*"` to `[tool.setuptools.package-data] sellbird`. Editable installs work today; a built wheel would drop the GTM tab.
+- **Owner / lane A, route order:** `gtm/plugin.py` mounts `gtm.fixture_routes` last, so lane A's `GET /api/gtm/runs/{id}` will catch `fixture` first and 404 the fixture. Either mount `fixture_routes` first or have lane A's `{id}` route return the fixture for `id == "fixture"`.
 - **Lane A, POST bodies the UI sends** (match these, or tell me yours):
   - `POST /api/gtm/runs` body = `Intake` JSON; reads `id` (or `run_id`) from the reply.
   - `POST /api/gtm/runs/{id}/drafts/{draft_id}` `{"action": "approve"|"reject"|"edit", "body"?: str, "note"?: str}`
@@ -25,7 +26,8 @@
 - Fixture actions apply in this tab only and say so; every rep action adds a rep audit event.
 
 ## Verification
-- `python -m pytest -q gtm/tests` → 8 passed (incl. `gtm/tests/web/test_gtm_web.py` at 1440 and 390 px: clicks every control, fails on console/page errors).
+- `python -m pytest -q gtm/tests` → 9 passed (incl. `gtm/tests/web/test_gtm_web.py` at 1440 and 390 px: clicks every control, fails on console/page errors).
+- `gtm/tests/web/test_gtm_web_live.py`: live-run path against an in-memory stand-in for lane A's routes. Intake → run starts and the picker switches; companies added server-side appear by polling within one tick; emails masked on real runs; approve posts `{"action":"approve"}`; a server refusal (409) shows as an error toast; stage move posts `{"stage":...}`.
 - Core web tests (dashboard, packaging, signals…): 602 passed, 1 skipped.
 - Chromium: the lane's Chromium lacked system libs; the test links the .deb libs in `~/chromelibs` by soname in a temp dir. No browser downloaded.
 - Screenshots (looked at, fixed what they showed): `data/gtm/shots/{intake,icp,leads,competitors,graph,drafts,pipeline}-{1440,390}.png`.
