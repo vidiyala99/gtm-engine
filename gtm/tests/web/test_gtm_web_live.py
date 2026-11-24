@@ -121,8 +121,11 @@ def test_live_run_fills_and_posts(live_server):
         state["run"]["companies"] = copy.deepcopy(load_fixture().model_dump(mode="json")["companies"])
         page.wait_for_function("() => document.querySelectorAll('#gtm .gtm-leads tbody tr').length === 4", timeout=8000)
         assert "Running" in page.locator("#gtm-live").inner_text()
-        state["run"]["status"] = "done"
+        # Lane A's runner logs run_finished without setting status: the badge still says done.
+        state["run"]["audit"].append({"at": "2026-11-24T18:05:00Z", "actor": "ai", "agent": "pipeline",
+                                      "action": "run_finished", "target": RUN_ID, "detail": "", "tokens": 0, "cost_usd": 0})
         page.wait_for_function("() => document.getElementById('gtm-live').innerText.includes('Run done')", timeout=8000)
+        state["run"]["status"] = "done"
 
         # Real-run emails are masked until the rep asks to see them.
         assert "d•••@acmefreight.example.com" in page.locator("#gtm .gtm-email").first.inner_text()

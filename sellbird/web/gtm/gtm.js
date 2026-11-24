@@ -238,7 +238,7 @@ function gSchedule() {
       else gRenderLive();
     }
     gSchedule();
-  }, gtm.run && gtm.run.status && gtm.run.status !== 'running' ? GTM_POLL_MS * 4 : GTM_POLL_MS);
+  }, gtm.run && gRunStatus(gtm.run) !== 'running' ? GTM_POLL_MS * 4 : GTM_POLL_MS);
 }
 
 async function gSwitchRun(id) {
@@ -475,10 +475,20 @@ function gRenderLive() {
   if (el) el.innerHTML = gLiveText();
 }
 
+// Run.status, or, while it still says running, what the pipeline's own audit log
+// says: the runner logs run_finished or step_failed even when it leaves status alone.
+function gRunStatus(run) {
+  const st = run.status || 'running';
+  if (st !== 'running') return st;
+  const last = (run.audit || []).filter(e => e.actor !== 'rep' &&
+    ['run_started', 'run_finished', 'step_failed'].includes(e.action)).pop();
+  return !last ? st : last.action === 'run_finished' ? 'done' : last.action === 'step_failed' ? 'failed' : st;
+}
+
 function gLiveText() {
   if (gIsLocal()) return '<span class="mini t-idle">Fixture, fictional data</span>';
   if (gtm.error) return '<span class="mini t-bad">Not loading</span>';
-  const st = gtm.run && gtm.run.status;
+  const st = gtm.run && gRunStatus(gtm.run);
   const badge = st === 'failed' ? '<span class="mini t-bad">Run failed</span>'
     : st === 'done' ? '<span class="mini t-good">Run done</span>'
     : '<span class="mini t-active">Running, live</span>';
