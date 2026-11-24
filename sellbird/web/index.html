@@ -8,6 +8,7 @@
 <!-- First, so the token leaves the address bar before anything else runs. -->
 <script src="/static/auth.js"></script>
 <link rel="stylesheet" href="/static/app.css">
+<link rel="stylesheet" href="/static/gtm/gtm.css">
 <link rel="icon" href="/static/sellbird-mark.svg" type="image/svg+xml">
 </head>
 <body>
@@ -87,6 +88,7 @@
     </div>
     <div class="nav-group">
       <div class="nav-label">Pipeline</div>
+      <button onclick="showTab('gtm', this)"><svg class="icon" aria-hidden="true"><use href="#i-flag"/></svg><span class="label">GTM engine</span></button>
       <button onclick="showTab('signals', this)"><svg class="icon" aria-hidden="true"><use href="#i-signals"/></svg><span class="label">Signals</span><span class="nav-count" id="nav-signals"></span></button>
       <button onclick="showTab('discover', this)"><svg class="icon" aria-hidden="true"><use href="#i-discover"/></svg><span class="label">Discover</span></button>
       <button onclick="showTab('companies', this)"><svg class="icon" aria-hidden="true"><use href="#i-companies"/></svg><span class="label">Companies</span></button>
@@ -126,6 +128,9 @@
 <div class="content-inner">
 
 <!-- Today: what needs a human -->
+<!-- GTM engine (sellbird/web/gtm/): filled by gtm.js -->
+<div id="gtm" class="section"></div>
+
 <div id="today" class="section active">
   <div class="section-head">
     <div>
@@ -609,5 +614,6 @@
 </div>
 
 <script src="/static/app.js"></script>
+<script src="/static/gtm/gtm.js"></script>
 </body>
 </html>
