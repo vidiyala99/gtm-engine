@@ -21,4 +21,4 @@
 - Step 3 ICP with real expansion evidence.
 
 ## Blocks
-- **Model calls:** the `claude` CLI on this lane says "Not logged in" (no `~/.claude` credentials, no `CLAUDE_CODE_OAUTH_TOKEN`). Sellbird's Brain therefore returns nothing. Fix on the lane: `claude login`, or `claude setup-token` and export `CLAUDE_CODE_OAUTH_TOKEN`. Smoke test: `.venv/bin/python -c "from gtm.pipeline import llm; print(llm.ask_json('Return {\"ok\": true}', agent='t', task='t'))"`.
+- **Model calls from the lane session:** your smoke test at 22:09 worked (1,944 tokens), so your shell has a credential. My session (Claude Code child) still gets "Not logged in". Please put `CLAUDE_CODE_OAUTH_TOKEN=...` in `/home/node/gtm-engine/.env` (gitignored); `gtm/pipeline/llm.py` loads it. Until then a model miss writes `data/gtm/cache/llm/<agent>-<task>-<hash>.pending.json` and the step stops; the reply can be filled in and the step re-run for free (Glasser calls are cached).
