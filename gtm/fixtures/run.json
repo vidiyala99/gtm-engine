@@ -1,0 +1,482 @@
+{
+  "id": "fixture",
+  "created_at": "2026-11-24T18:00:00Z",
+  "intake": {
+    "product": "Northwind Query",
+    "description": "A natural-language query layer over a company's databases with verifiable plans.",
+    "features": [
+      "NL to SQL with a reviewable plan",
+      "row-level permissions",
+      "Postgres, Snowflake, BigQuery"
+    ],
+    "constraints": [
+      "no on-prem before Q3"
+    ],
+    "customers": [
+      "a mid-market logistics firm"
+    ],
+    "pricing": "usage-based, contracts from $30k/yr"
+  },
+  "icp": {
+    "industries": [
+      {
+        "value": "Logistics software",
+        "confidence": 0.82,
+        "why": "2 of 3 wins",
+        "naics": "541511"
+      },
+      {
+        "value": "Fintech data teams",
+        "confidence": 0.64,
+        "why": "pricing fits",
+        "naics": "522320"
+      }
+    ],
+    "headcount_bands": [
+      {
+        "value": "200-2000",
+        "confidence": 0.77,
+        "why": ""
+      }
+    ],
+    "revenue_bands": [
+      {
+        "value": "$50M-$500M",
+        "confidence": 0.58,
+        "why": ""
+      }
+    ],
+    "personas": [
+      {
+        "title": "Head of Data",
+        "seniority": "director",
+        "confidence": 0.8
+      },
+      {
+        "title": "VP Engineering",
+        "seniority": "vp",
+        "confidence": 0.66
+      }
+    ],
+    "triggers": [
+      {
+        "value": "hiring analytics engineers",
+        "confidence": 0.74,
+        "why": ""
+      },
+      {
+        "value": "new CDO/Head of Data",
+        "confidence": 0.7,
+        "why": ""
+      }
+    ],
+    "expansions": [
+      {
+        "segment": "Healthcare ops analytics",
+        "rationale": "reviews cite ad-hoc SQL backlog",
+        "evidence": [
+          {
+            "url": "https://reviews-a.example.com/source",
+            "title": "Review: SQL backlog",
+            "quote": "we wait a week for a report",
+            "provider": "glasser:/g2.reviews",
+            "retrieved_at": "2026-11-24T18:00:00Z",
+            "cost_usd": 0.02
+          }
+        ],
+        "status": "proposed"
+      }
+    ]
+  },
+  "companies": [
+    {
+      "id": "co_acme",
+      "name": "Acme Freight",
+      "domain": "acmefreight.example.com",
+      "hq": "Chicago, US",
+      "industry": "Logistics software",
+      "headcount": "640",
+      "fit_score": 88,
+      "intent_score": 81,
+      "tier": "A",
+      "signals": [
+        {
+          "id": "sig_1",
+          "kind": "job_post",
+          "summary": "Hiring 3 analytics engineers",
+          "negative": false,
+          "observed_on": "2026-11-10",
+          "citation": {
+            "url": "https://acme-jobs.example.com/source",
+            "title": "Careers",
+            "quote": "Analytics Engineer (3 openings)",
+            "provider": "web",
+            "retrieved_at": "2026-11-24T18:00:00Z",
+            "cost_usd": 0.0
+          }
+        }
+      ],
+      "citations": [
+        {
+          "url": "https://acme.example.com/source",
+          "title": "About",
+          "quote": "Freight visibility platform for 4,000 shippers",
+          "provider": "web",
+          "retrieved_at": "2026-11-24T18:00:00Z",
+          "cost_usd": 0.0
+        }
+      ],
+      "rejected_reason": ""
+    },
+    {
+      "id": "co_globex",
+      "name": "Globex Pay",
+      "domain": "globexpay.example.com",
+      "hq": "New York, US",
+      "industry": "Fintech",
+      "headcount": "1,200",
+      "fit_score": 74,
+      "intent_score": 69,
+      "tier": "B",
+      "signals": [
+        {
+          "id": "sig_2",
+          "kind": "exec_hire",
+          "summary": "New Head of Data in October",
+          "negative": false,
+          "observed_on": "2026-10-02",
+          "citation": {
+            "url": "https://globex-news.example.com/source",
+            "title": "Press",
+            "quote": "appoints Head of Data",
+            "provider": "web",
+            "retrieved_at": "2026-11-24T18:00:00Z",
+            "cost_usd": 0.0
+          }
+        }
+      ],
+      "citations": [
+        {
+          "url": "https://globex.example.com/source",
+          "title": "Home",
+          "quote": "Payments infrastructure for marketplaces",
+          "provider": "web",
+          "retrieved_at": "2026-11-24T18:00:00Z",
+          "cost_usd": 0.0
+        }
+      ],
+      "rejected_reason": ""
+    },
+    {
+      "id": "co_initech",
+      "name": "Initech Health",
+      "domain": "initech.example.com",
+      "hq": "Austin, US",
+      "industry": "Healthcare software",
+      "headcount": "410",
+      "fit_score": 61,
+      "intent_score": 52,
+      "tier": "C",
+      "signals": [],
+      "citations": [
+        {
+          "url": "https://initech.example.com/source",
+          "title": "About",
+          "quote": "Scheduling for 900 clinics",
+          "provider": "web",
+          "retrieved_at": "2026-11-24T18:00:00Z",
+          "cost_usd": 0.0
+        }
+      ],
+      "rejected_reason": ""
+    },
+    {
+      "id": "co_umbrella",
+      "name": "Umbrella Logistics",
+      "domain": "umbrella.example.com",
+      "hq": "Leeds, UK",
+      "industry": "Logistics",
+      "headcount": "300",
+      "fit_score": 70,
+      "intent_score": 10,
+      "tier": "C",
+      "signals": [
+        {
+          "id": "sig_3",
+          "kind": "hiring_freeze",
+          "summary": "Hiring freeze announced",
+          "negative": true,
+          "observed_on": "2026-11-01",
+          "citation": {
+            "url": "https://umbrella-news.example.com/source",
+            "title": "Blog",
+            "quote": "pausing all hiring until 2027",
+            "provider": "web",
+            "retrieved_at": "2026-11-24T18:00:00Z",
+            "cost_usd": 0.0
+          }
+        }
+      ],
+      "citations": [
+        {
+          "url": "https://umbrella.example.com/source",
+          "title": "Home",
+          "quote": "Regional freight forwarding",
+          "provider": "web",
+          "retrieved_at": "2026-11-24T18:00:00Z",
+          "cost_usd": 0.0
+        }
+      ],
+      "rejected_reason": "hiring freeze (negative signal sig_3)"
+    }
+  ],
+  "people": [
+    {
+      "id": "p_1",
+      "company_id": "co_acme",
+      "name": "Dana Example",
+      "title": "Head of Data",
+      "seniority": "director",
+      "email": "dana@acmefreight.example.com",
+      "email_status": "verified",
+      "mx_ok": true,
+      "linkedin_url": "https://www.linkedin.com/in/example-dana",
+      "confidence": 0.9,
+      "past_employers": [
+        "Globex Pay"
+      ],
+      "schools": [],
+      "citations": [
+        {
+          "url": "https://acme-team.example.com/source",
+          "title": "Team",
+          "quote": "Dana Example, Head of Data",
+          "provider": "web",
+          "retrieved_at": "2026-11-24T18:00:00Z",
+          "cost_usd": 0.0
+        }
+      ]
+    },
+    {
+      "id": "p_2",
+      "company_id": "co_globex",
+      "name": "Sam Example",
+      "title": "Head of Data",
+      "seniority": "director",
+      "email": "sam@globexpay.example.com",
+      "email_status": "catch_all",
+      "mx_ok": true,
+      "linkedin_url": "",
+      "confidence": 0.7,
+      "past_employers": [],
+      "schools": [],
+      "citations": [
+        {
+          "url": "https://globex-news.example.com/source",
+          "title": "Press",
+          "quote": "appoints Sam Example as Head of Data",
+          "provider": "web",
+          "retrieved_at": "2026-11-24T18:00:00Z",
+          "cost_usd": 0.0
+        }
+      ]
+    },
+    {
+      "id": "p_3",
+      "company_id": "co_globex",
+      "name": "Riley Example",
+      "title": "VP Engineering",
+      "seniority": "vp",
+      "email": "",
+      "email_status": "unknown",
+      "mx_ok": null,
+      "linkedin_url": "",
+      "confidence": 0.55,
+      "past_employers": [
+        "Globex Pay"
+      ],
+      "schools": [],
+      "citations": [
+        {
+          "url": "https://globex-team.example.com/source",
+          "title": "Leadership",
+          "quote": "Riley Example, VP Engineering",
+          "provider": "web",
+          "retrieved_at": "2026-11-24T18:00:00Z",
+          "cost_usd": 0.0
+        }
+      ]
+    }
+  ],
+  "competitors": [
+    {
+      "name": "QueryCo",
+      "domain": "queryco.example.com",
+      "kind": "direct",
+      "positioning": "BI-first NL query",
+      "pricing_tiers": [
+        "Team $500/mo",
+        "Enterprise custom"
+      ],
+      "differentiators": [
+        "dashboards"
+      ],
+      "citations": [
+        {
+          "url": "https://queryco.example.com/source",
+          "title": "Pricing",
+          "quote": "Team $500/mo",
+          "provider": "web",
+          "retrieved_at": "2026-11-24T18:00:00Z",
+          "cost_usd": 0.0
+        }
+      ]
+    },
+    {
+      "name": "In-house dbt + analysts",
+      "domain": "dbt.example.com",
+      "kind": "alternative",
+      "positioning": "hire analysts",
+      "pricing_tiers": [],
+      "differentiators": [],
+      "citations": [
+        {
+          "url": "https://alt.example.com/source",
+          "title": "Survey",
+          "quote": "62% build in-house",
+          "provider": "web",
+          "retrieved_at": "2026-11-24T18:00:00Z",
+          "cost_usd": 0.0
+        }
+      ]
+    }
+  ],
+  "drafts": [
+    {
+      "id": "d_1",
+      "person_id": "p_1",
+      "channel": "email",
+      "step": 1,
+      "variant": "A",
+      "subject": "3 analytics engineer openings",
+      "body": "Dana, saw Acme is hiring three analytics engineers. Teams at that stage often ...",
+      "signal_ids": [
+        "sig_1"
+      ],
+      "status": "pending",
+      "review_notes": []
+    },
+    {
+      "id": "d_2",
+      "person_id": "p_1",
+      "channel": "linkedin",
+      "step": 1,
+      "variant": "A",
+      "subject": "",
+      "body": "Dana, congrats on the data team growth at Acme ...",
+      "signal_ids": [
+        "sig_1"
+      ],
+      "status": "approved",
+      "review_notes": []
+    },
+    {
+      "id": "d_3",
+      "person_id": "p_2",
+      "channel": "email",
+      "step": 1,
+      "variant": "B",
+      "subject": "first 90 days as Head of Data",
+      "body": "Sam, new data leaders usually inherit a report backlog ...",
+      "signal_ids": [
+        "sig_2"
+      ],
+      "status": "rejected",
+      "review_notes": [
+        "reviewer: 'usually inherit' is an unsupported claim"
+      ]
+    }
+  ],
+  "leads": [
+    {
+      "company_id": "co_acme",
+      "person_id": "p_1",
+      "stage": "contacted",
+      "owner": "ai"
+    },
+    {
+      "company_id": "co_globex",
+      "person_id": "p_2",
+      "stage": "matched",
+      "owner": "ai"
+    },
+    {
+      "company_id": "co_initech",
+      "person_id": "",
+      "stage": "matched",
+      "owner": "rep"
+    }
+  ],
+  "audit": [
+    {
+      "at": "2026-11-24T18:00:00Z",
+      "actor": "ai",
+      "agent": "pipeline",
+      "action": "icp.inferred",
+      "target": "",
+      "detail": "",
+      "tokens": 4100,
+      "cost_usd": 0.0
+    },
+    {
+      "at": "2026-11-24T18:01:00Z",
+      "actor": "ai",
+      "agent": "pipeline",
+      "action": "discovery.search",
+      "target": "glasser:/zoominfo.search",
+      "detail": "",
+      "tokens": 0,
+      "cost_usd": 0.05
+    },
+    {
+      "at": "2026-11-24T18:02:00Z",
+      "actor": "ai",
+      "agent": "pipeline",
+      "action": "company.rejected",
+      "target": "co_umbrella",
+      "detail": "",
+      "tokens": 0,
+      "cost_usd": 0.0
+    },
+    {
+      "at": "2026-11-24T18:03:00Z",
+      "actor": "ai",
+      "agent": "pipeline",
+      "action": "enrich.email",
+      "target": "p_1",
+      "detail": "",
+      "tokens": 0,
+      "cost_usd": 0.01
+    },
+    {
+      "at": "2026-11-24T18:04:00Z",
+      "actor": "ai",
+      "agent": "reviewer",
+      "action": "draft.rejected",
+      "target": "d_3",
+      "detail": "",
+      "tokens": 2200,
+      "cost_usd": 0.0
+    },
+    {
+      "at": "2026-11-24T18:05:00Z",
+      "actor": "rep",
+      "agent": "",
+      "action": "draft.approved",
+      "target": "d_2",
+      "detail": "",
+      "tokens": 0,
+      "cost_usd": 0.0
+    }
+  ]
+}

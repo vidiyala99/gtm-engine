@@ -55,8 +55,12 @@ sellbird = "sellbird.cli:main"
 # The old name, kept for a while so existing installs keep working (harvey/).
 harvey = "harvey.cli:main"
 
+# GTM Engine plugs in through Sellbird's own extension point (sellbird/extensions.py).
+[project.entry-points."sellbird.extensions"]
+gtm = "gtm.plugin:install"
+
 [tool.setuptools.packages.find]
-include = ["sellbird*", "harvey*"]
+include = ["sellbird*", "harvey*", "gtm*"]
 
 # The editable defaults an installed app seeds its home folder from
 # (sellbird/home.py). They land in <prefix>/share/sellbird.
@@ -67,3 +71,4 @@ data-files = {"share/sellbird" = ["sellbird.yaml", ".env.example"], "share/sellb
 # are vendored so a local tool renders correctly with the network off.
 [tool.setuptools.package-data]
 sellbird = ["web/*", "web/fonts/*"]
+gtm = ["fixtures/*.json"]

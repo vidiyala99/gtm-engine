@@ -1,3 +1,7 @@
+# GTM Engine lanes: read this first
+
+This repo is a hackathon fork. If you were started with a lane brief, follow `docs/gtm/briefs/COMMON.md` and your brief; skip the "When Someone First Opens This Project" guide below. The public-repo rule below still applies.
+
 # Sellbird — the open-source outreach platform
 
 Sellbird (formerly Harvey) is an open-source outreach platform powered by Claude Code. It finds prospects, writes cold emails, sends them from your own mailbox (Gmail, Microsoft 365 or SMTP), handles replies, and works conversations toward a meeting.

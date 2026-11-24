@@ -1,3 +1,11 @@
+# GTM Engine (hackathon fork of Sellbird)
+
+An evidence-first go-to-market loop: product intake, ICP with confidence, cited account and buyer discovery, a knowledge graph, enrichment, signal-cited outreach behind a human approval gate, and a pipeline dashboard. Built for the AI GTM Engine hackathon brief in `docs/gtm/SPEC.md`.
+
+It is built on **[Sellbird](https://github.com/ethanplusai/sellbird)** by ethanplusai (AGPL-3.0), and stays AGPL-3.0. The GTM code lives in `gtm/` and plugs in through Sellbird's extension point; Sellbird's own README follows below.
+
+---
+
 <p align="center">
   <a href="https://sellbird.ai">
     <picture>
