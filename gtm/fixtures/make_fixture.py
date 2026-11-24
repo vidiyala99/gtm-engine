@@ -105,7 +105,7 @@ def build() -> Run:
              ("rep", "", "draft.approved", "d_2", 0, 0.0)]
     audit = [AuditEvent(at=T0 + timedelta(minutes=i), actor=a, agent=g, action=act, target=tgt,
                         tokens=tok, cost_usd=c) for i, (a, g, act, tgt, tok, c) in enumerate(steps)]
-    return Run(id="fixture", created_at=T0, intake=intake, icp=icp, companies=companies, people=people,
+    return Run(id="fixture", created_at=T0, status="done", intake=intake, icp=icp, companies=companies, people=people,
                competitors=competitors, drafts=drafts, leads=leads, audit=audit)
 
 
