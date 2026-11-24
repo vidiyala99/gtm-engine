@@ -35,6 +35,7 @@ dependencies = [
     "pydantic>=2.5,<3",
     "pytz>=2024.1",
     "fastapi>=0.115,<1",
+    "kuzu==0.11.3",  # GTM knowledge graph (embedded)
     "uvicorn>=0.34,<1",
     "mcp>=2.3,<3",
 ]
@@ -70,5 +71,5 @@ data-files = {"share/sellbird" = ["sellbird.yaml", ".env.example"], "share/sellb
 # The dashboard's HTML/CSS/JS are real files served from disk, and its fonts
 # are vendored so a local tool renders correctly with the network off.
 [tool.setuptools.package-data]
-sellbird = ["web/*", "web/fonts/*"]
+sellbird = ["web/*", "web/fonts/*", "web/gtm/*"]
 gtm = ["fixtures/*.json"]

@@ -8,7 +8,8 @@ from __future__ import annotations
 
 import importlib
 
-LANE_ROUTERS = ("gtm.pipeline.routes", "gtm.graph.routes", "gtm.band.routes", "gtm.fixture_routes")
+# The fixture route goes first so `/api/gtm/runs/fixture` is not caught by `/api/gtm/runs/{id}`.
+LANE_ROUTERS = ("gtm.fixture_routes", "gtm.pipeline.routes", "gtm.graph.routes", "gtm.band.routes")
 
 
 def install(registry) -> None:
