@@ -28,7 +28,7 @@ const GTM_PATHS = [
 ];
 
 const gtm = {
-  runId: sessionStorage.getItem('gtm-run') || GTM_FIXTURE,
+  runId: sessionStorage.getItem('gtm-run') || '',  // '' until the run list says which real run is newest
   run: null,
   error: '',
   view: sessionStorage.getItem('gtm-view') || 'leads',
@@ -155,7 +155,11 @@ async function loadGtm() {
   const root = document.getElementById('gtm');
   if (!root) return;
   if (!gtm.bound) { gBind(root); gtm.bound = true; }
-  await Promise.all([gLoadRun(), gLoadRuns()]);
+  if (!gtm.runId) {  // nothing picked in this tab yet: open the newest real run, else the fixture
+    await gLoadRuns();
+    gtm.runId = gtm.newestReal || GTM_FIXTURE;
+    await gLoadRun();
+  } else await Promise.all([gLoadRun(), gLoadRuns()]);
   gRender();
   gSchedule();
 }
@@ -205,8 +209,12 @@ async function gLoadRuns() {
     const product = r && r.intake && r.intake.product || r && r.product || r && r.label || '';
     runs.push({id, label: product ? product + ' (' + id + ')' : id});
   });
-  if (!seen.has(gtm.runId)) runs.push({id: gtm.runId, label: gtm.runId});
+  if (gtm.runId && !seen.has(gtm.runId)) runs.push({id: gtm.runId, label: gtm.runId});
   gtm.runs = runs;
+  // Real run ids start with their UTC start time (run_YYYYmmddHHMMSS_…), so the largest is the newest.
+  const real = fromApi.map(r => typeof r === 'string' ? r : r && r.id).filter(id => id && id !== GTM_FIXTURE);
+  const stamped = real.filter(id => /^run_\d{14}/.test(id)).sort();
+  gtm.newestReal = stamped.length ? stamped[stamped.length - 1] : real[real.length - 1] || '';
 }
 
 function gRemember(id, label) {

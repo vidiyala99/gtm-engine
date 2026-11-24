@@ -17,6 +17,7 @@ sync_api = pytest.importorskip("playwright.sync_api")
 from gtm.tests.web.test_gtm_web import _browser, _free_port, _open  # noqa: E402
 
 RUN_ID = "stub-live-1"
+OLDER, NEWER = "run_20261101090000_aaaaaa", "run_20261124090000_bbbbbb"
 
 
 def _stub_router(state):
@@ -33,10 +34,18 @@ def _stub_router(state):
         state["run"], state["posts"] = run, []
         return {"id": RUN_ID}
 
+    @r.get("/api/gtm/runs")
+    async def listing():
+        return {"ids": [NEWER, OLDER] + ([RUN_ID] if "run" in state else [])}
+
     @r.get("/api/gtm/runs/{run_id}")
     async def get(run_id: str):
         if run_id == "fixture":  # a /{id} route shadows the fixture route mounted after it
             return load_fixture().model_dump(mode="json")
+        if run_id in (OLDER, NEWER):
+            run = load_fixture().model_dump(mode="json")
+            run.update(id=run_id, status="done", intake={**run["intake"], "product": "Product " + run_id[-6:]})
+            return run
         if run_id != RUN_ID or "run" not in state:
             raise HTTPException(404, "no such run")
         return state["run"]
@@ -144,4 +153,19 @@ def test_live_run_fills_and_posts(live_server):
 
         browser.close()
         errors = [e for e in errors if "409 (Conflict)" not in e or "/drafts/d_9" not in e]  # provoked above
+        assert not errors, "\n".join(errors)
+
+
+def test_picker_defaults_to_newest_real_run(live_server):
+    base, token, _ = live_server
+    with sync_api.sync_playwright() as p:
+        browser = _browser(p)
+        page = browser.new_page(viewport={"width": 1440, "height": 1000})
+        errors = _open(page, base, token)  # no run picked in this tab
+        page.wait_for_function(f"() => document.getElementById('gtm-run-picker').value === '{NEWER}'", timeout=5000)
+        assert page.locator("#gtm .gtm-title h2").inner_text() == "Product bbbbbb"
+        assert "d•••@" in page.locator("#gtm .gtm-email").first.inner_text()  # real runs open masked
+        page.select_option("#gtm-run-picker", "fixture")  # the fixture is still one pick away
+        page.wait_for_function("() => (document.getElementById('gtm-live')?.innerText || '').includes('Fixture')", timeout=5000)
+        browser.close()
         assert not errors, "\n".join(errors)

@@ -87,7 +87,8 @@ def _browser(p):
         pytest.skip(f"Chromium not available: {e}")
 
 
-def _open(page, base, token):
+def _open(page, base, token, run=None):
+    """Open the GTM tab. `run` pins the picker; without it the tab picks its default (newest real run)."""
     errors: list[str] = []
 
     def on_console(msg):
@@ -103,7 +104,7 @@ def _open(page, base, token):
 
     page.on("console", on_console)
     page.on("pageerror", lambda exc: errors.append(f"pageerror: {exc}"))
-    page.add_init_script("sessionStorage.clear()")
+    page.add_init_script("sessionStorage.clear()" + (f"; sessionStorage.setItem('gtm-run', {run!r})" if run else ""))
     page.goto(f"{base}/#token={token}")
     page.click("nav button:has-text('GTM engine')")
     page.wait_for_selector("#gtm .gtm-tabs")
@@ -141,7 +142,7 @@ def test_fixture_views(server, width, height):
     with sync_api.sync_playwright() as p:
         browser = _browser(p)
         page = browser.new_page(viewport={"width": width, "height": height})
-        errors = _open(page, base, token)
+        errors = _open(page, base, token, run="fixture")  # real runs on this machine must not change the check
         tag = f"{width}"
 
         # Leads: every company row carries a clickable source; the rejected one keeps its reason.
