@@ -24,8 +24,8 @@ log = logging.getLogger(__name__)
 # step that has not landed yet is skipped, not fatal.
 STEPS: list[tuple[str, str]] = [
     ("icp", "gtm.pipeline.icp:run_step"),
+    ("competitors", "gtm.pipeline.competitors:run_step"),  # first, so discovery never prospects a competitor
     ("discover", "gtm.pipeline.discover:run_step"),
-    ("competitors", "gtm.pipeline.competitors:run_step"),
     ("enrich", "gtm.pipeline.enrich:run_step"),
     ("draft", "gtm.pipeline.draft:run_step"),
 ]
