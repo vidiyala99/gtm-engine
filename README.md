@@ -1,6 +1,7 @@
 # Bearing: GTM that changes course
 
-**Demo:** open `one/home.html` (landing) or `one/index.html` (app) in a browser, or serve the folder: `cd one && python -m http.server 8000`, then visit http://localhost:8000/home.html. No build step.
+**Live:** https://bearing-gtm.vercel.app  
+**Local:** open `one/index.html` (landing) or `one/app.html` (app) in a browser, or serve the folder: `cd one && python -m http.server 8000`, then visit http://localhost:8000/. No build step.
 
 Bearing reads a company's GTM stack (CRM, calls, events, ads), notices what stopped working, and proposes the next heading (ICP, plays, budget), with evidence on every finding and human approval before anything runs. The demo uses synthetic data for a fictional company, TraceLayer; integrations are simulated.
 

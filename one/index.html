@@ -3,203 +3,61 @@
 <title>Bearing</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600&family=Barlow+Condensed:ital,wght@1,500;1,600&display=swap">
 <style>
-/* World: a navigator's chart. Land (buff) rail, chart-water fields, magenta plotted course, black soundings for figures, fix marks at each course change. */
-:root{
-  --land:#ece2c4; --land-ink:#3d3622; --paper:#fdfdfb; --water:#d9eaf3; --water-deep:#b7d5e7; --contour:#9cc2d8;
-  --ink:#121417; --muted:#4f5b66; --course:#c0187f; --fix-good:#23804a; --fix-bad:#c73a2b; --warn:#a86a00; --rule:#dfe4e8;
-  --ui:'Barlow',system-ui,sans-serif; --chart:'Barlow Condensed','Barlow',sans-serif; --ease:cubic-bezier(.23,1,.32,1);
-}
+:root{--land:#ece2c4;--paper:#fdfdfb;--water:#d9eaf3;--contour:#9cc2d8;--ink:#121417;--muted:#3f4c58;--course:#c0187f;--good:#23804a;--bad:#c73a2b;--warn:#a86a00;--ease:cubic-bezier(.23,1,.32,1)}
 *{box-sizing:border-box;margin:0}
-body{min-height:100vh;font:16px/1.5 var(--ui);color:var(--ink);background:var(--paper);display:grid;grid-template-columns:196px minmax(0,1fr);font-variant-numeric:tabular-nums}
-::selection{background:#f6c6e2;color:var(--ink)}
-html{scrollbar-color:#c3ccd5 transparent}
-nav{background:var(--land);color:var(--land-ink);padding:20px 12px;display:flex;flex-direction:column;gap:1px;font-size:15px;position:sticky;top:0;height:100vh;overflow:auto}
-nav .brand{font:600 22px var(--ui);color:var(--ink);padding:0 12px 4px;letter-spacing:.02em}
-nav .brand + small{font:italic 500 14px var(--chart);color:var(--land-ink);padding:0 12px 16px}
-nav button{all:unset;padding:6px 12px;border-radius:6px;cursor:pointer;transition:background-color 150ms var(--ease)}
-nav button:hover{background:#e2d6b2}
-nav button[aria-current]{background:var(--ink);color:var(--land)}
-nav button:focus-visible{outline:2px solid var(--course);outline-offset:2px}
-nav .gap{height:12px}
-nav select{margin-top:auto;font:inherit;padding:8px;border-radius:6px;border:1px solid #cdbf98;background:#f4ecd6;color:var(--ink);cursor:pointer}
-main{min-width:0;position:relative}
-.bar{display:flex;justify-content:space-between;align-items:center;gap:16px;padding:16px 40px;background:var(--water);border-bottom:1px solid var(--contour)}
-.bar input{width:340px;max-width:100%;font:inherit;font-size:15px;padding:8px 12px;border:1px solid var(--contour);border-radius:6px;background:var(--paper);caret-color:var(--course)}
-.bar input:focus-visible,.btn:focus-visible,select:focus-visible{outline:2px solid var(--course);outline-offset:2px}
-.sync{font-size:14px;color:var(--muted);display:flex;align-items:center;gap:8px}
-.live{width:8px;height:8px;border-radius:50%;background:var(--fix-good);box-shadow:0 0 0 0 rgba(35,128,74,.5);animation:ping 2s infinite}
-@keyframes ping{70%{box-shadow:0 0 0 8px rgba(35,128,74,0)}100%{box-shadow:0 0 0 0 rgba(35,128,74,0)}}
-#view{transition:opacity 200ms var(--ease),transform 200ms var(--ease)}
-#view.out{opacity:0;transform:translateY(6px)}
-.page{padding:28px 40px 120px;max-width:1200px}
-.page h1,h1{font-size:34px;line-height:1.12;font-weight:600;letter-spacing:-.02em;text-wrap:balance}
-.lede{color:var(--muted);margin:8px 0 24px;max-width:66ch}
-.grid2{display:grid;grid-template-columns:1.3fr 1fr;gap:44px}
-h2{font-size:17px;font-weight:600;margin-bottom:4px}
-.muted{color:var(--muted)}
-.tbl{width:100%;border-collapse:collapse;font-size:15px}
-.tbl th{text-align:left;font-weight:500;color:var(--muted);padding:9px 10px;border-bottom:1px solid var(--rule);cursor:pointer;user-select:none}
-.tbl td{padding:11px 10px;border-bottom:1px solid var(--rule);vertical-align:top}
-.tbl tr{transition:background-color 400ms var(--ease)}
-.tbl tbody tr:hover{background:#f6f9fb}
-.btn{font:500 15px var(--ui);padding:7px 14px;border-radius:6px;border:1px solid #c9d1d8;background:var(--paper);color:var(--ink);cursor:pointer;white-space:nowrap;transition:transform 140ms var(--ease),background-color 150ms var(--ease)}
-.btn:hover{background:#f1f4f6}
-.btn:active{transform:scale(.97)}
-.btn.go{background:var(--course);border-color:var(--course);color:#fff}
-.btn.go:hover{background:#a5136c}
-.btn.ok{background:#e4f2ea;border-color:#b5dcc4;color:var(--fix-good)}
-.tag{display:inline-block;font-size:13px;font-weight:500;padding:1px 8px;border-radius:4px;border:1px solid currentColor}
-.tag.good{color:var(--fix-good)} .tag.bad{color:var(--fix-bad)} .tag.warn{color:var(--warn)} .tag.info{color:#1d5f8a}
-.fixmark{display:inline-block;width:14px;height:14px;border-radius:50%;border:2px solid var(--course);position:relative;vertical-align:-2px}
-.fixmark::after{content:"";position:absolute;inset:3px;border-radius:50%;background:var(--course)}
-.fixmark.good{border-color:var(--fix-good)}.fixmark.good::after{background:var(--fix-good)}
-.fixmark.bad{border-color:var(--fix-bad)}.fixmark.bad::after{background:var(--fix-bad)}
-.new{background:#fbe3f1 !important}
-/* overview */
-.sea{background:var(--water);position:relative;padding:8px 40px 8px;overflow:hidden}
-#head{margin-top:20px;max-width:780px;transition:opacity 240ms var(--ease),filter 240ms var(--ease)}
-#head.out,#read.out{opacity:0;filter:blur(4px)}
-.ov h1{font-size:38px}
-#sub{margin-top:8px;color:#2c3a46;max-width:62ch}
-.plot{position:relative;margin-top:6px}
-.plot svg{display:block;width:100%;height:auto;overflow:visible}
-.plot .wk{font:500 13px var(--ui);fill:var(--muted)}
-.plot .nm{font:italic 600 17px var(--chart);fill:#1d3b52}
-#course{transition:stroke-dashoffset 800ms var(--ease)}
-.fix{cursor:pointer}.fix .hit{fill:transparent}
-.fix .ring{fill:var(--water);stroke-width:2.5;transition:r 160ms var(--ease)}
-.fix:hover .ring,.fix.on .ring{r:11}
-.fix:focus{outline:none}.fix:focus-visible .ring{stroke:var(--ink)}
-.fix .nm{opacity:.45;transition:opacity 200ms var(--ease)}
-.fix.on .nm,.fix.past .nm{opacity:1}
-.ghost{stroke:var(--course);stroke-width:2;stroke-dasharray:4 6;fill:none;opacity:.6}
-#read{position:absolute;background:var(--paper);border:1px solid var(--contour);border-radius:4px;padding:10px 14px;box-shadow:0 6px 18px rgba(29,59,82,.14);min-width:236px;transition:opacity 240ms var(--ease),filter 240ms var(--ease),left 500ms var(--ease),top 500ms var(--ease)}
-#read div{display:flex;justify-content:space-between;gap:18px;font-size:14px;color:var(--muted)}
-#read b{color:var(--ink);font-weight:600;font-size:16px}
-#read s{color:var(--muted);font-weight:400;margin-right:6px;font-size:14px}
-#read p{font:italic 600 15px var(--chart);color:var(--course);margin-bottom:4px}
-.land{padding:24px 40px 120px;display:grid;grid-template-columns:1.3fr 1fr;gap:48px}
-ul.rows{padding:0}
-ul.rows li{list-style:none;display:flex;justify-content:space-between;align-items:center;gap:18px;padding:12px 0;border-top:1px solid var(--rule)}
-ul.rows li span{font-weight:500}
-ul.rows li em{display:block;font-style:normal;color:var(--muted);font-size:14px;font-weight:400}
-ul.rows li.done span{color:var(--muted)}
-ul.src li{list-style:none;font-size:15px;padding:10px 0;border-top:1px solid var(--rule)}
-/* live log */
-#log{position:fixed;right:20px;bottom:20px;width:340px;background:var(--paper);border:1px solid var(--contour);border-radius:8px;box-shadow:0 10px 30px rgba(29,59,82,.18);font-size:14px;z-index:5;transition:transform 260ms var(--ease)}
-#log header{display:flex;align-items:center;gap:8px;padding:10px 12px;border-bottom:1px solid var(--rule);cursor:pointer;font-weight:600}
-#log header span:last-child{margin-left:auto;color:var(--muted);font-weight:400}
-#log ol{list-style:none;padding:0;max-height:220px;overflow:auto}
-#log li{padding:8px 12px;border-bottom:1px solid var(--rule);animation:in 360ms var(--ease)}
-#log li b{font:italic 600 15px var(--chart);margin-right:6px}
-#log li.find b{color:var(--course)} #log li.warn b{color:var(--warn)} #log li.done b{color:var(--fix-good)}
-#log.min ol{display:none}
-@keyframes in{from{opacity:0;transform:translateY(-6px);filter:blur(3px)}}
-#toast{position:fixed;bottom:24px;left:50%;transform:translate(-50%,16px);opacity:0;background:var(--ink);color:#fff;padding:10px 16px;border-radius:8px;font-size:15px;display:flex;gap:16px;transition:opacity 220ms var(--ease),transform 220ms var(--ease);pointer-events:none;z-index:6}
-#toast.show{opacity:1;transform:translate(-50%,0);pointer-events:auto}
-#toast button{all:unset;color:#f6a6d4;cursor:pointer;font-weight:600}
-@media (max-width:900px){body{grid-template-columns:1fr}nav{position:static;height:auto;flex-direction:row;flex-wrap:wrap;gap:4px}nav .gap,nav select,nav small{display:none}.bar,.page,.sea,.land{padding-left:16px;padding-right:16px}.grid2,.land{grid-template-columns:1fr}#read{position:static;margin:8px 0}#log{left:16px;right:16px;width:auto}.ov h1{font-size:28px}}
-@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+body{font:17px/1.5 'Barlow',system-ui,sans-serif;color:var(--ink);background:var(--paper)}
+::selection{background:#f6c6e2}
+.sea{background:var(--water);min-height:88vh;display:grid;grid-template-rows:auto 1fr auto;padding:24px max(24px,5vw) 0;overflow:hidden}
+header{display:flex;justify-content:space-between;align-items:center}
+.brand{font-weight:600;font-size:22px;letter-spacing:.02em}
+.brand small{font:italic 500 15px 'Barlow Condensed';color:var(--muted);margin-left:10px}
+.btn{display:inline-block;font:600 17px 'Barlow';padding:12px 22px;border-radius:6px;background:var(--course);color:#fff;text-decoration:none;transition:transform 140ms var(--ease),background-color 150ms}
+.btn:hover{background:#a5136c}.btn:active{transform:scale(.97)}
+.btn:focus-visible{outline:2px solid var(--ink);outline-offset:3px}
+.ghost{background:transparent;color:var(--ink);border:1px solid var(--contour);padding:9px 16px;font-size:15px}
+.ghost:hover{background:#cfe3ee}
+.hero{align-self:center;max-width:760px;padding:40px 0 10px}
+h1{font-size:clamp(44px,6.4vw,88px);line-height:1;letter-spacing:-.035em;font-weight:600}
+.hero p{font-size:20px;color:var(--muted);margin:18px 0 28px;max-width:42ch}
+svg{display:block;width:100%;height:auto}
+.nm{font:italic 600 18px 'Barlow Condensed';fill:#1d3b52}
+#course{stroke-dasharray:1800;stroke-dashoffset:1800;animation:plot 2.4s var(--ease) .3s forwards}
+.fx{opacity:0;animation:show .4s var(--ease) forwards}
+@keyframes plot{to{stroke-dashoffset:0}}@keyframes show{to{opacity:1}}
+.how{padding:64px max(24px,5vw) 40px;max-width:1200px}
+.how h2{font-size:32px;letter-spacing:-.02em;font-weight:600;max-width:24ch}
+.steps{display:grid;grid-template-columns:repeat(3,1fr);gap:40px;margin-top:32px;border-top:3px solid var(--course);padding-top:22px}
+.steps b{display:block;font:italic 600 20px 'Barlow Condensed';color:var(--course)}
+.steps p{color:var(--muted);margin-top:6px;max-width:34ch}
+footer{padding:28px max(24px,5vw) 48px;color:var(--muted);font-size:15px;display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;border-top:1px solid #dfe4e8}
+@media(max-width:760px){.steps{grid-template-columns:1fr;gap:20px}.hero p{font-size:18px}}
+@media(prefers-reduced-motion:reduce){#course{animation:none;stroke-dashoffset:0}.fx{animation:none;opacity:1}}
 </style></head><body>
-<nav aria-label="Workspaces">
-  <a class="brand" href="home.html" style="text-decoration:none">Bearing</a><small>GTM that changes course</small>
-  <button data-v="overview">Overview</button><button data-v="actions">Action Center</button>
-  <div class="gap"></div><button data-v="discovery">Discovery</button><button data-v="icps">ICPs</button><button data-v="signals">Signals</button><button data-v="accounts">Accounts</button>
-  <div class="gap"></div><button data-v="channels">Channels</button><button data-v="events">Events</button><button data-v="pipeline">Pipeline</button>
-  <div class="gap"></div><button data-v="revenue">Meetings</button><button data-v="spend">Spend &amp; ROI</button>
-  <div class="gap"></div><button data-v="strategy">Strategy &amp; Learning</button><button data-v="agents">Agents</button><button data-v="integrations">Integrations</button>
-  <select id="role" aria-label="Viewing as"><option>Founder</option><option>Head of GTM</option><option>SDR</option><option>Product</option></select>
-</nav>
-<main>
-  <div class="bar"><input id="ask" placeholder="Ask Bearing anything  (Ctrl K)" aria-label="Ask Bearing"><span class="sync"><i class="live" aria-hidden="true"></i><span id="sync">6 sources live</span><span>TraceLayer, synthetic demo data</span></span></div>
-  <div id="view"></div>
-</main>
-<aside id="log" aria-label="Agent activity"><header><i class="live" aria-hidden="true"></i><span>Agents at work</span><span id="logn">14 agents</span></header><ol id="logl" aria-live="polite"></ol></aside>
-<div id="toast" role="status"><span id="tmsg"></span><button id="undo">Undo</button></div>
-<script>
-const ONE={views:{},view(id,v){this.views[id]=v}};window.ONE=ONE;
-const $=id=>document.getElementById(id);
-let timers=[],undoFn=null;
-const ctx={
-  toast(msg,undo){$('tmsg').textContent=msg;undoFn=undo||null;$('undo').hidden=!undo;const t=$('toast');t.classList.add('show');clearTimeout(t.t);t.t=setTimeout(()=>t.classList.remove('show'),3400)},
-  feed(agent,text,kind){const li=document.createElement('li');li.className=kind||'find';li.innerHTML='<b>'+agent+'</b>'+text;$('logl').prepend(li);while($('logl').children.length>30)$('logl').lastChild.remove()},
-  go(id){location.hash=id},
-  every(ms,fn){timers.push(setInterval(fn,ms))}
-};
-$('undo').onclick=()=>{if(undoFn)undoFn();$('toast').classList.remove('show')};
-$('log').querySelector('header').onclick=()=>$('log').classList.toggle('min');
-function route(){
-  const id=(location.hash.slice(1)||'overview');const v=ONE.views[id]||ONE.views.overview;
-  timers.forEach(clearInterval);timers=[];
-  document.querySelectorAll('nav button').forEach(b=>b.toggleAttribute('aria-current',b.dataset.v===(ONE.views[id]?id:'overview')));
-  const el=$('view');el.classList.add('out');
-  setTimeout(()=>{el.innerHTML='';const box=document.createElement('div');el.appendChild(box);v.render(box,ctx);el.classList.remove('out');document.title='Bearing, '+v.title;scrollTo(0,0)},150);
-}
-document.querySelectorAll('nav button').forEach(b=>b.onclick=()=>ctx.go(b.dataset.v));
-addEventListener('hashchange',route);
-addEventListener('keydown',e=>{if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='k'){e.preventDefault();$('ask').focus()}});
-$('ask').onkeydown=e=>{if(e.key==='Enter'&&e.target.value.trim()){const q=e.target.value.toLowerCase();e.target.value='';
-  const map=[['icp','icps'],['linkedin','channels'],['channel','channels'],['event','events'],['product','revenue'],['compet','signals'],['account','accounts'],['learn','strategy'],['agent','agents']];
-  const hit=map.find(([k])=>q.includes(k));ctx.feed('Strategy Agent','Answered "'+q+'" with evidence from the '+(hit?hit[1]:'overview')+' workspace.','done');ctx.go(hit?hit[1]:'overview')}};
-// global liveness: background agents keep working on every page
-const BG=[['Signal Agent','RelayOps posted a second GTM engineer role.','find'],['Enrichment Agent','Merged 3 duplicate contacts from Luma and HubSpot.','done'],['Competitor Agent','Arize changed its pricing page toward enterprise.','warn'],['Revenue Agent','Call with Vellum Labs: Salesforce sync came up again.','warn'],['Discovery Agent','Found 2 accounts launching production agents this week.','find'],['Relationship Agent','New warm path to Kepler Ops via a dinner guest.','find'],['Evaluation Agent','Revised ICP test: day 6, qualified rate holding at 11.2%.','done'],['Market Agent','Search interest in agent evals up 18% month over month.','find'],['Event Agent','GTA 6 launched last week: drafted a gifting play for 12 tier A accounts.','find'],['Event Agent','Thanksgiving lunch: 9 local ICP founders likely free on Thursday.','find']];
-let bi=0;setInterval(()=>{const [a,t,k]=BG[bi++%BG.length];ctx.feed(a,t,k)},4200);
-const SY=['6 sources live','Syncing HubSpot','Syncing Gong','Syncing Luma','6 sources live'];let si=0;setInterval(()=>{$('sync').textContent=SY[si++%SY.length]},2600);
-ctx.feed('Strategy Agent','Revised ICP ready for approval. Confidence 0.78.','find');ctx.feed('Signal Agent','17 high-priority signals since yesterday.','find');
-// overview view
-const W=[
- {x:60,y:180,rate:4.5,wk:'Week 1',nm:'Funded startups',kind:'start',title:'Start with recently funded AI startups.',sub:'Funded startups reply fastest, so discovery leans on funding signals.',r:[['Qualified opp rate',null,'4.5%'],['Cost per qualified opp',null,'$310'],['Monthly pipeline',null,'$180k']],todo:[['Contact 40 funded startups','Funding announced in the last 30 days.']],why:[['HubSpot','14% reply rate from funded startups']]},
- {x:300,y:188,rate:4.1,wk:'Week 2',nm:'Funding is not buying',kind:'bad',title:'Replies went up. Qualified deals did not.',sub:'Calls show the wrong timing and the wrong contact. Funding predicts replies, not purchases.',r:[['Qualified opp rate','4.5%','4.1%'],['Cost per qualified opp','$310','$334'],['Monthly pipeline','$180k','$172k']],todo:[['Cut funding-only priority','Funding correlates with replies, not qualified deals.'],['Find the real decision makers','Heads of Data sign at this size, not founders.']],why:[['Gong','38 calls mention timing or no budget owner'],['HubSpot','Replies up 31%, qualified opps down 9%']]},
- {x:540,y:126,rate:7.2,wk:'Week 3',nm:'Launch plus hiring',kind:'good',title:'Launching AI while hiring GTM engineers converts 2.4 times better.',sub:'Two weak signals together beat one strong one. Discovery now looks for both.',r:[['Qualified opp rate','4.5%','7.2%'],['Cost per qualified opp','$310','$248'],['Monthly pipeline','$180k','$231k']],todo:[['Add the combined signal to discovery','A product launch and GTM hiring in the same month.']],why:[['Signals','64 opportunities compared across both segments'],['LinkedIn Jobs','GTM engineer roles at 41 matched accounts']]},
- {x:770,y:78,rate:9.6,wk:'Week 4',nm:'Warm intros win',kind:'good',title:'Warm intros beat cold email for this segment.',sub:'One founders dinner opened 5 introduction paths. Intros book meetings at three times the cold rate.',r:[['Qualified opp rate','4.5%','9.6%'],['Cost per qualified opp','$310','$201'],['Monthly pipeline','$180k','$268k']],todo:[['Ask 5 dinner guests for introductions','AI Infrastructure Founders Dinner, 64 attendees.']],why:[['Luma','64 attendees, 21 already in the CRM'],['Gmail','19 intros this month, 6 before']]},
- {x:950,y:82,rate:9.4,wk:'Week 5',nm:'Growth stalled',kind:'stall',title:'Growth stalled for a week. Paid ads grew, qualified deals did not.',sub:'Spend on paid ads rose 30% while the qualified rate slipped from 9.6% to 9.4%. Bearing flagged it before the month closed.',r:[['Qualified opp rate','4.5%','9.4%'],['Cost per qualified opp','$310','$214'],['Monthly pipeline','$180k','$271k']],todo:[['Cap paid ads at last month level','Clicks come from tool shoppers, not ICP accounts.'],['Move the difference to dinners','Dinners book meetings at $300 per qualified opp, ads at $750.']],why:[['Google Ads','Spend up 30%, ICP clicks flat'],['HubSpot','Qualified rate 9.6% to 9.4%']]},
- {x:1110,y:54,rate:10.8,wk:'Today',nm:'Today',kind:'now',title:'Your best buyers changed. Approve the new ICP test.',sub:'Companies launching production AI and hiring GTM engineers now lead. Confidence 0.78 on 64 opportunities, correlation not proof.',r:[['Qualified opp rate','4.5%','10.8%'],['Cost per qualified opp','$310','$185'],['Monthly pipeline','$180k','$294k']],todo:[['Test the revised ICP for 14 days','12 new accounts match.'],['Ask a customer to introduce RelayOps','Not ready for 60 days. Warm path exists.'],['Move $1,500 from paid ads to events','Paid ads take 40% of spend for 12.5% of qualified opps.']],why:[['Gong','Sales calls show timing and decision-maker gaps'],['Luma','Events produce the warmest paths'],['Google Ads','Lowest qualified return per dollar']],go:['icps','accounts','channels']}
-];
-const done={};let cur=-1;
-ONE.view('overview',{title:'Overview',render(el,c){
-  el.className='ov';
-  el.innerHTML=`<section class="sea"><header id="head"><h1 id="title"></h1><p id="sub"></p></header><div class="plot"><svg id="svg" viewBox="0 0 1200 300" role="group" aria-label="Course changes over 90 days. Arrow keys or click a fix."></svg><div id="read" aria-live="polite"></div></div></section>
-  <section class="land"><div><h2 id="doh"></h2><ul class="rows" id="list"></ul></div><div><h2>Why the course changed</h2><ul class="src" id="why"></ul></div></section>`;
-  const NS='http://www.w3.org/2000/svg',svg=$('svg');
-  const mk=(t,a,p)=>{const e=document.createElementNS(NS,t);for(const k in a)e.setAttribute(k,a[k]);(p||svg).appendChild(e);return e};
-  [[262,'#b7d5e7'],[286,'#9cc2d8']].forEach(([y,col])=>mk('path',{d:`M0 ${y} C 240 ${y-18}, 480 ${y+14}, 720 ${y-6} S 1080 ${y-20}, 1200 ${y-4}`,fill:'none',stroke:col,'stroke-width':1}));
-  W.forEach(p=>{const t=mk('text',{x:p.x,y:298,'text-anchor':p.kind==='now'?'end':'middle',class:'wk'});t.textContent=p.wk});
-  mk('line',{x1:40,y1:180,x2:1180,y2:180,stroke:'#7aa6c2','stroke-dasharray':'2 5','stroke-width':1});
-  const bl=mk('text',{x:1180,y:174,'text-anchor':'end',class:'wk'});bl.textContent='Where you started, 4.5%';
-  mk('path',{class:'ghost',d:'M1110 54 L 1190 40'});
-  const course=mk('polyline',{id:'course',points:W.map(p=>p.x+','+p.y).join(' '),fill:'none',stroke:'#c0187f','stroke-width':3.5,'stroke-linejoin':'round','stroke-linecap':'round'});
-  const downs=W.map((p,k)=>k&&p.y>W[k-1].y?mk('line',{x1:W[k-1].x,y1:W[k-1].y,x2:p.x,y2:p.y,stroke:p.kind==='stall'?'#a86a00':'#c73a2b','stroke-width':4.5,'stroke-linecap':'round',opacity:0,style:'transition:opacity 300ms'}):null);
-  const L=course.getTotalLength();course.style.strokeDasharray=L;course.style.strokeDashoffset=L;
-  const col={start:'#c0187f',bad:'#c73a2b',good:'#23804a',stall:'#a86a00',now:'#c0187f'};
-  const fixes=W.map((p,i)=>{const g=mk('g',{class:'fix',tabindex:0,role:'button','aria-label':p.wk+', '+p.nm});
-    mk('circle',{class:'hit',cx:p.x,cy:p.y,r:26},g);mk('circle',{class:'ring',cx:p.x,cy:p.y,r:9,stroke:col[p.kind]},g);mk('circle',{cx:p.x,cy:p.y,r:3,fill:col[p.kind]},g);
-    const n=mk('text',{x:p.x,y:p.y-20,'text-anchor':p.kind==='now'?'end':'middle',class:'nm'},g);n.textContent=p.nm;
-    g.onclick=()=>go(i);g.onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();go(i)}};return g});
-  const seg=i=>{let l=0;for(let k=1;k<=i;k++)l+=Math.hypot(W[k].x-W[k-1].x,W[k].y-W[k-1].y);return l};
-  function render(i){const p=W[i];$('title').textContent=p.title;$('sub').textContent=p.sub;
-    $('read').innerHTML='<p>'+p.wk+'</p>'+p.r.map(([l,b,a])=>'<div>'+l+'<b>'+(b?'<s>'+b+'</s>':'')+a+'</b></div>').join('');
-    const rd=$('read'),left=p.x/1200*100,top=p.y/300*100;
-    if(innerWidth>900){rd.style.left=(p.x>700?`calc(${left}% - 262px)`:`calc(${left}% + 22px)`);rd.style.top=(p.y>150?`calc(${top}% - 150px)`:`calc(${top}% + 18px)`)}
-    $('doh').textContent=p.kind==='now'?'Decide today':'What Bearing recommended in '+p.wk;
-    $('list').innerHTML=p.todo.map(([a,b],k)=>{const id=i+'-'+k,d=done[id];return `<li class="${d?'done':''}"><span>${a}<em>${b}</em></span><button class="btn ${d?'ok':(k===0?'go':'')}" data-id="${id}">${d?'Approved':'Approve'}</button></li>`}).join('');
-    $('why').innerHTML=p.why.map(([s,t],k)=>`<li><b>${s}</b> ${t}${p.go?` <button class="btn" style="padding:2px 10px;font-size:14px" data-go="${p.go[k]}">Open</button>`:''}</li>`).join('');}
-  function go(i,instant){if(i===cur&&!instant)return;cur=i;course.style.strokeDashoffset=L-seg(i);
-    fixes.forEach((g,k)=>{g.classList.toggle('on',k===i);g.classList.toggle('past',k<i)});
-    downs.forEach((d,k)=>{if(d)d.setAttribute('opacity',k<=i?1:0)});
-    if(instant){render(i);return}$('head').classList.add('out');$('read').classList.add('out');
-    setTimeout(()=>{render(i);$('head').classList.remove('out');$('read').classList.remove('out')},180)}
-  $('list').onclick=e=>{const b=e.target.closest('button');if(!b)return;const id=b.dataset.id;done[id]=!done[id];render(cur);
-    if(done[id])c.feed('Strategy Agent','Approved: '+b.closest('li').querySelector('span').firstChild.textContent+'. Queued for the owner.','done');
-    c.toast(done[id]?'Approved. Nothing is sent until the owner confirms.':'Approval removed.',()=>{done[id]=!done[id];render(cur)})};
-  $('why').onclick=e=>{const b=e.target.closest('[data-go]');if(b)c.go(b.dataset.go)};
-  el.onkeydown=null;c.every(10,()=>{});
-  const kh=e=>{if(!document.body.contains(svg)){removeEventListener('keydown',kh);return}if(e.target.tagName==='INPUT')return;if(e.key==='ArrowLeft'&&cur>0)go(cur-1);if(e.key==='ArrowRight'&&cur<W.length-1)go(cur+1)};
-  addEventListener('keydown',kh);
-  cur=-1;course.getBoundingClientRect();requestAnimationFrame(()=>{go(0,true);setTimeout(()=>go(W.length-1),250)});
-}});
-</script>
-<script src="views/actions.js"></script><script src="views/signals.js"></script><script src="views/agents.js"></script>
-<script src="views/icps.js"></script><script src="views/accounts.js"></script><script src="views/discovery.js"></script>
-<script src="views/channels.js"></script><script src="views/events.js"></script><script src="views/integrations.js"></script><script src="views/more.js"></script>
-<script>route();</script>
+<section class="sea">
+  <header><span class="brand">Bearing<small>GTM that changes course</small></span><a class="btn ghost" href="app.html">Open the demo</a></header>
+  <div class="hero">
+    <h1>GTM that changes course.</h1>
+    <p>Bearing reads your CRM, calls, events and spend, finds what stopped working, and resets your heading before the quarter is lost.</p>
+    <a class="btn" href="app.html">See it change course</a>
+  </div>
+  <svg viewBox="0 0 1200 230" aria-hidden="true">
+    <path d="M0 206 C 260 190, 520 220, 760 200 S 1080 186, 1200 198" fill="none" stroke="#b7d5e7"/>
+    <path d="M0 222 C 300 210, 600 232, 900 214 S 1120 210, 1200 216" fill="none" stroke="#9cc2d8"/>
+    <polyline id="course" points="40,150 280,158 520,104 760,62 960,66 1160,38" fill="none" stroke="#c0187f" stroke-width="4" stroke-linejoin="round" stroke-linecap="round"/>
+    <g class="fx" style="animation-delay:.9s"><circle cx="280" cy="158" r="9" fill="#d9eaf3" stroke="#c73a2b" stroke-width="2.5"/><circle cx="280" cy="158" r="3" fill="#c73a2b"/><text class="nm" x="280" y="186" text-anchor="middle">Funding is not buying</text></g>
+    <g class="fx" style="animation-delay:1.4s"><circle cx="520" cy="104" r="9" fill="#d9eaf3" stroke="#23804a" stroke-width="2.5"/><circle cx="520" cy="104" r="3" fill="#23804a"/><text class="nm" x="520" y="84" text-anchor="middle">Launch plus hiring</text></g>
+    <g class="fx" style="animation-delay:1.8s"><circle cx="760" cy="62" r="9" fill="#d9eaf3" stroke="#23804a" stroke-width="2.5"/><circle cx="760" cy="62" r="3" fill="#23804a"/><text class="nm" x="760" y="42" text-anchor="middle">Warm intros win</text></g>
+    <g class="fx" style="animation-delay:2.1s"><circle cx="960" cy="66" r="9" fill="#d9eaf3" stroke="#a86a00" stroke-width="2.5"/><circle cx="960" cy="66" r="3" fill="#a86a00"/><text class="nm" x="960" y="96" text-anchor="middle">Stall caught</text></g>
+    <g class="fx" style="animation-delay:2.5s"><circle cx="1160" cy="38" r="9" fill="#d9eaf3" stroke="#c0187f" stroke-width="2.5"/><circle cx="1160" cy="38" r="3" fill="#c0187f"/><text class="nm" x="1160" y="22" text-anchor="end">Qualified rate 4.5% to 10.8%</text></g>
+  </svg>
+</section>
+<section class="how">
+  <h2>Most GTM tools help you run the old plan faster. Bearing tells you when to change it.</h2>
+  <div class="steps">
+    <div><b>Read where you are</b><p>Connects the stack you already use: CRM, inbox, calls, events, ads. Every finding links to the records behind it.</p></div>
+    <div><b>Notice what changed</b><p>Fourteen agents watch signals, deals and competitors, and argue in the open when the evidence disagrees.</p></div>
+    <div><b>Set the next heading</b><p>Proposes the new ICP, the next plays and the budget shift. Nothing runs until you approve it.</p></div>
+  </div>
+</section>
+<footer><span>Demo with synthetic data for a fictional company, TraceLayer.</span><a class="btn ghost" href="app.html">Open the demo</a></footer>
 </body></html>
