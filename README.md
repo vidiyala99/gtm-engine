@@ -1,3 +1,15 @@
+# Bearing: GTM that changes course
+
+**Demo:** open `one/home.html` (landing) or `one/index.html` (app) in a browser, or serve the folder: `cd one && python -m http.server 8000`, then visit http://localhost:8000/home.html. No build step.
+
+Bearing reads a company's GTM stack (CRM, calls, events, ads), notices what stopped working, and proposes the next heading (ICP, plays, budget), with evidence on every finding and human approval before anything runs. The demo uses synthetic data for a fictional company, TraceLayer; integrations are simulated.
+
+- `one/`: the Bearing frontend (14 workspaces, live agent activity, strategy course).
+- `docs/gtm/ONE-BRIEF.md`: product brief. `PRODUCT.md`: product truth. `docs/gtm/SPEC.md`: hackathon brief.
+- `gtm/`: earlier pipeline work (ICP, cited discovery, knowledge graph, BAND agent review) built as a Sellbird extension; not wired to the Bearing UI yet.
+
+---
+
 # GTM Engine (hackathon fork of Sellbird)
 
 An evidence-first go-to-market loop: product intake, ICP with confidence, cited account and buyer discovery, a knowledge graph, enrichment, signal-cited outreach behind a human approval gate, and a pipeline dashboard. Built for the AI GTM Engine hackathon brief in `docs/gtm/SPEC.md`.
